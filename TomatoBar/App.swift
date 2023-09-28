@@ -1,5 +1,5 @@
-import SwiftUI
 import LaunchAtLogin
+import SwiftUI
 
 extension NSImage.Name {
     static let idle = Self("BarIconIdle")
@@ -10,29 +10,20 @@ extension NSImage.Name {
 
 private let digitFont = NSFont.monospacedDigitSystemFont(ofSize: 0, weight: .regular)
 
-@main
-struct TBApp: App {
-    @NSApplicationDelegateAdaptor(TBStatusItem.self) var appDelegate
-
-    init() {
-        TBStatusItem.shared = appDelegate
-        LaunchAtLogin.migrateIfNeeded()
-        logger.append(event: TBLogEventAppStart())
-    }
-
-    var body: some Scene {
-        Settings {
-            EmptyView()
-        }
-    }
-}
-
 class TBStatusItem: NSObject, NSApplicationDelegate {
     private var popover = NSPopover()
     private var statusBarItem: NSStatusItem?
     static var shared: TBStatusItem!
 
+    override init() {
+        super.init()
+        TBStatusItem.shared = self
+    }
+
     func applicationDidFinishLaunching(_: Notification) {
+        LaunchAtLogin.migrateIfNeeded()
+        logger.append(event: TBLogEventAppStart())
+
         let view = TBPopoverView()
 
         popover.behavior = .transient
