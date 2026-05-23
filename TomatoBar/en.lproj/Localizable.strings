@@ -4,11 +4,11 @@
 "IntervalsView.longRestIntervalLength.help" = "Duration of the lengthy break, taken after finishing work interval set";
 "IntervalsView.workIntervalsInSet.label" = "Work intervals in a set:";
 "IntervalsView.workIntervalsInSet.help" = "Number of working intervals in the set, after which a lengthy break taken";
-"IntervalsView.workSetsToRepeat.label" = "Sets to repeat:";
+"IntervalsView.workSetsToRepeat.label" = "Sets to repeat (0=∞):";
 "IntervalsView.workSetsToRepeat.help" = "Use unlimited to keep repeating until stopped";
 "IntervalsView.minutesUnit" = "min";
 "IntervalsView.intervalsUnit" = "times";
-"IntervalsView.setsUnit" = "sets, 0=∞";
+"IntervalsView.setsUnit" = "sets";
 "SettingsView.shortcut.label" = "Shortcut";
 "SettingsView.stopAfterBreak.label" = "Stop after break";
 "SettingsView.showTimerInMenuBar.label" = "Show timer in menu bar";
