@@ -172,6 +172,50 @@ private struct TimerStatusView: View {
     }
 }
 
+private struct StopwatchStatusView: View {
+    @EnvironmentObject var timer: TBTimer
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(alignment: .firstTextBaseline) {
+                Text(timer.statusTitle)
+                    .font(.headline)
+                Spacer()
+                Text(timer.timeLeftString)
+                    .font(.system(.title3).monospacedDigit())
+                    .foregroundColor(.secondary)
+            }
+            Text(timer.nextStepDescription)
+                .font(.caption)
+                .foregroundColor(.secondary)
+                .lineLimit(1)
+        }
+    }
+}
+
+private struct TimerModePicker: View {
+    @EnvironmentObject var timer: TBTimer
+
+    var body: some View {
+        Picker("", selection: modeBinding) {
+            Text(NSLocalizedString("TBTimerMode.pomodoro.label", comment: "Pomodoro mode label"))
+                .tag(TBTimerMode.pomodoro)
+            Text(NSLocalizedString("TBTimerMode.stopwatch.label", comment: "Stopwatch mode label"))
+                .tag(TBTimerMode.stopwatch)
+        }
+        .labelsHidden()
+        .pickerStyle(.segmented)
+        .disabled(!timer.canChangeTimerMode)
+    }
+
+    private var modeBinding: Binding<TBTimerMode> {
+        Binding(
+            get: { timer.timerMode },
+            set: { timer.setTimerMode($0) }
+        )
+    }
+}
+
 private struct WeekFocusBarsView: View {
     let totals: [TBDailyFocusTotal]
 
@@ -266,16 +310,26 @@ struct TBPopoverView: View {
 
     private var startLabel = NSLocalizedString("TBPopoverView.start.label", comment: "Start label")
     private var stopLabel = NSLocalizedString("TBPopoverView.stop.label", comment: "Stop label")
+    private var pauseLabel = NSLocalizedString("TBStopwatch.pause.label", comment: "Pause label")
+    private var resumeLabel = NSLocalizedString("TBStopwatch.resume.label", comment: "Resume label")
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            TimerStatusView().environmentObject(timer)
+            TimerModePicker().environmentObject(timer)
+
+            if timer.timerMode == .stopwatch {
+                StopwatchStatusView().environmentObject(timer)
+            } else {
+                TimerStatusView().environmentObject(timer)
+            }
 
             Button {
                 timer.startStop()
-                TBStatusItem.shared.closePopover(nil)
+                if timer.timerMode == .pomodoro {
+                    TBStatusItem.shared.closePopover(nil)
+                }
             } label: {
-                Text(timer.timer != nil ? stopLabel : startLabel)
+                Text(primaryButtonLabel)
                     /*
                       When appearance is set to "Dark" and accent color is set to "Graphite"
                       "defaultAction" button label's color is set to the same color as the
@@ -287,6 +341,17 @@ struct TBPopoverView: View {
             }
             .controlSize(.large)
             .keyboardShortcut(.defaultAction)
+            .keyboardShortcut(.space, modifiers: [])
+
+            if timer.timerMode == .stopwatch, timer.stopwatchPhase == .paused {
+                Button {
+                    timer.stopStopwatch()
+                } label: {
+                    Text(stopLabel)
+                        .frame(maxWidth: .infinity)
+                }
+                .controlSize(.regular)
+            }
 
             Picker("", selection: $activeChildView) {
                 Text(NSLocalizedString("TBPopoverView.history.label",
@@ -357,6 +422,21 @@ struct TBPopoverView: View {
 //            .frame(width: 240, height: 276)
             .padding(12)
     }
+
+    private var primaryButtonLabel: String {
+        guard timer.timerMode == .stopwatch else {
+            return timer.timer != nil ? stopLabel : startLabel
+        }
+
+        switch timer.stopwatchPhase {
+        case .idle:
+            return startLabel
+        case .running:
+            return pauseLabel
+        case .paused:
+            return resumeLabel
+        }
+    }
 }
 
 private func durationString(_ durationSeconds: Int) -> String {
@@ -390,6 +470,10 @@ private func timeRangeString(_ session: TBFocusSession) -> String {
 }
 
 private func sessionLabel(_ session: TBFocusSession) -> String {
+    if session.mode == .stopwatch {
+        return NSLocalizedString("HistoryView.session.stopwatch", comment: "Stopwatch focus session label")
+    }
+
     let format = session.completed
         ? NSLocalizedString("HistoryView.session.completed", comment: "Completed session label")
         : NSLocalizedString("HistoryView.session.stopped", comment: "Stopped session label")

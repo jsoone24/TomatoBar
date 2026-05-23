@@ -20,6 +20,8 @@
 "TBPopoverView.sounds.label" = "声音";
 "TBPopoverView.about.label" = "关于";
 "TBPopoverView.quit.label" = "退出";
+"TBTimerMode.pomodoro.label" = "计时器";
+"TBTimerMode.stopwatch.label" = "秒表";
 "TBTimer.status.idle" = "就绪";
 "TBTimer.status.focus" = "专注 %d/%d";
 "TBTimer.status.shortBreak" = "短休息";
@@ -27,6 +29,14 @@
 "TBTimer.next.focus" = "下一个: 专注 %d/%d";
 "TBTimer.next.shortBreak" = "下一个: 短休息 %d 分";
 "TBTimer.next.longBreak" = "下一个: 长休息 %d 分";
+"TBStopwatch.status.idle" = "秒表就绪";
+"TBStopwatch.status.running" = "自由专注";
+"TBStopwatch.status.paused" = "已暂停";
+"TBStopwatch.detail.idle" = "向上累计专注时间";
+"TBStopwatch.detail.running" = "正在记录专注时间";
+"TBStopwatch.detail.paused" = "休息已过: %@";
+"TBStopwatch.pause.label" = "暂停";
+"TBStopwatch.resume.label" = "继续";
 "HistoryView.today.label" = "今天";
 "HistoryView.empty.label" = "还没有专注记录";
 "HistoryView.duration.seconds" = "%d 秒";
@@ -34,6 +44,7 @@
 "HistoryView.duration.hoursMinutes" = "%d 小时 %d 分";
 "HistoryView.session.completed" = "专注 %d/%d";
 "HistoryView.session.stopped" = "专注 %d/%d 已停止";
+"HistoryView.session.stopwatch" = "秒表专注";
 "TBTimer.onRestStart.title" = "时间到";
 "TBTimer.onRestStart.short.body" = "小憩时间到!";
 "TBTimer.onRestStart.long.body" = "长休息时间到!";

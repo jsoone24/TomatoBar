@@ -1,12 +1,26 @@
 import Combine
 import Foundation
 
+enum TBTimerMode: String, Codable, CaseIterable, Identifiable {
+    case pomodoro, stopwatch
+
+    var id: String { rawValue }
+}
+
 enum TBTimerPhase: String, Codable, Equatable {
-    case idle, work, rest
+    case idle, work, rest, stopwatchRunning, stopwatchPaused
+
+    var isStopwatch: Bool {
+        self == .stopwatchRunning || self == .stopwatchPaused
+    }
 }
 
 enum TBRestKind: String, Codable, Equatable {
     case short, long
+}
+
+enum TBStopwatchPhase: Equatable {
+    case idle, running, paused
 }
 
 struct TBActiveTimerSnapshot: Codable, Equatable {
@@ -20,6 +34,9 @@ struct TBActiveTimerSnapshot: Codable, Equatable {
     let updatedAt: Date
     let sessionID: UUID?
     let sourceDeviceID: String?
+    let elapsedSeconds: Int?
+    let runningStartedAt: Date?
+    let pausedAt: Date?
 
     init(phase: TBTimerPhase,
          startedAt: Date?,
@@ -30,7 +47,10 @@ struct TBActiveTimerSnapshot: Codable, Equatable {
          revision: Int,
          updatedAt: Date,
          sessionID: UUID?,
-         sourceDeviceID: String?) {
+         sourceDeviceID: String?,
+         elapsedSeconds: Int? = nil,
+         runningStartedAt: Date? = nil,
+         pausedAt: Date? = nil) {
         self.phase = phase
         self.startedAt = startedAt
         self.expectedEndAt = expectedEndAt
@@ -41,6 +61,9 @@ struct TBActiveTimerSnapshot: Codable, Equatable {
         self.updatedAt = updatedAt
         self.sessionID = sessionID
         self.sourceDeviceID = sourceDeviceID
+        self.elapsedSeconds = elapsedSeconds
+        self.runningStartedAt = runningStartedAt
+        self.pausedAt = pausedAt
     }
 }
 

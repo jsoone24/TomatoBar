@@ -5,6 +5,8 @@ struct TBSharedTimerView: View {
 
     private var startLabel = NSLocalizedString("TBPopoverView.start.label", comment: "Start label")
     private var stopLabel = NSLocalizedString("TBPopoverView.stop.label", comment: "Stop label")
+    private var pauseLabel = NSLocalizedString("TBStopwatch.pause.label", comment: "Pause label")
+    private var resumeLabel = NSLocalizedString("TBStopwatch.resume.label", comment: "Resume label")
 
     init(timer: TBSharedTimerController) {
         self.timer = timer
@@ -16,6 +18,8 @@ struct TBSharedTimerView: View {
         #else
         NavigationView {
             VStack(alignment: .leading, spacing: 20) {
+                TBSharedTimerModePicker(timer: timer)
+
                 VStack(alignment: .leading, spacing: 10) {
                     HStack(alignment: .firstTextBaseline) {
                         Text(timer.statusTitle)
@@ -26,11 +30,13 @@ struct TBSharedTimerView: View {
                             .foregroundColor(.secondary)
                     }
 
-                    TBSharedCycleDotsView(
-                        total: timer.cycleTotal,
-                        completed: timer.cycleCompletedCount,
-                        active: timer.cycleActiveIndex
-                    )
+                    if timer.timerMode == .pomodoro {
+                        TBSharedCycleDotsView(
+                            total: timer.cycleTotal,
+                            completed: timer.cycleCompletedCount,
+                            active: timer.cycleActiveIndex
+                        )
+                    }
 
                     Text(timer.nextStepDescription)
                         .font(.subheadline)
@@ -40,7 +46,7 @@ struct TBSharedTimerView: View {
                 Button {
                     timer.startStop()
                 } label: {
-                    Text(timer.phase == .idle ? startLabel : stopLabel)
+                    Text(primaryButtonLabel)
                         .font(.headline)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 10)
@@ -49,8 +55,24 @@ struct TBSharedTimerView: View {
                         .cornerRadius(8)
                 }
                 .buttonStyle(.plain)
+                .keyboardShortcut(.space, modifiers: [])
 
-                if timer.phase == .rest {
+                if timer.timerMode == .stopwatch, timer.stopwatchPhase == .paused {
+                    Button {
+                        timer.stopStopwatch()
+                    } label: {
+                        Text(stopLabel)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 8)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 8)
+                                    .stroke(Color.secondary.opacity(0.3), lineWidth: 1)
+                            )
+                    }
+                    .buttonStyle(.plain)
+                }
+
+                if timer.timerMode == .pomodoro, timer.phase == .rest {
                     Button {
                         timer.skipRest()
                     } label: {
@@ -93,6 +115,8 @@ struct TBSharedTimerView: View {
     private var watchBody: some View {
         ScrollView {
             VStack(spacing: 12) {
+                TBSharedTimerModePicker(timer: timer)
+
                 Text(timer.statusTitle)
                     .font(.footnote.weight(.semibold))
                     .multilineTextAlignment(.center)
@@ -100,22 +124,31 @@ struct TBSharedTimerView: View {
                 Text(timer.timeLeftString)
                     .font(.system(.title2).monospacedDigit().weight(.semibold))
 
-                TBSharedCycleDotsView(
-                    total: timer.cycleTotal,
-                    completed: timer.cycleCompletedCount,
-                    active: timer.cycleActiveIndex
-                )
+                if timer.timerMode == .pomodoro {
+                    TBSharedCycleDotsView(
+                        total: timer.cycleTotal,
+                        completed: timer.cycleCompletedCount,
+                        active: timer.cycleActiveIndex
+                    )
+                }
 
                 Text(timer.nextStepDescription)
                     .font(.caption2)
                     .foregroundColor(.secondary)
                     .multilineTextAlignment(.center)
 
-                Button(timer.phase == .idle ? startLabel : stopLabel) {
+                Button(primaryButtonLabel) {
                     timer.startStop()
                 }
 
-                if timer.phase == .rest {
+                if timer.timerMode == .stopwatch, timer.stopwatchPhase == .paused {
+                    Button(stopLabel) {
+                        timer.stopStopwatch()
+                    }
+                    .font(.caption)
+                }
+
+                if timer.timerMode == .pomodoro, timer.phase == .rest {
                     Button(NSLocalizedString("TBTimer.onRestStart.skip.title", comment: "Skip")) {
                         timer.skipRest()
                     }
@@ -135,6 +168,52 @@ struct TBSharedTimerView: View {
         }
     }
     #endif
+
+    private var primaryButtonLabel: String {
+        guard timer.timerMode == .stopwatch else {
+            return timer.phase == .idle ? startLabel : stopLabel
+        }
+
+        switch timer.stopwatchPhase {
+        case .idle:
+            return startLabel
+        case .running:
+            return pauseLabel
+        case .paused:
+            return resumeLabel
+        }
+    }
+}
+
+private struct TBSharedTimerModePicker: View {
+    @ObservedObject var timer: TBSharedTimerController
+
+    var body: some View {
+        #if os(watchOS)
+        picker
+        #else
+        picker
+            .pickerStyle(.segmented)
+        #endif
+    }
+
+    private var picker: some View {
+        Picker("", selection: modeBinding) {
+            Text(NSLocalizedString("TBTimerMode.pomodoro.label", comment: "Pomodoro mode label"))
+                .tag(TBTimerMode.pomodoro)
+            Text(NSLocalizedString("TBTimerMode.stopwatch.label", comment: "Stopwatch mode label"))
+                .tag(TBTimerMode.stopwatch)
+        }
+        .labelsHidden()
+        .disabled(!timer.canChangeTimerMode)
+    }
+
+    private var modeBinding: Binding<TBTimerMode> {
+        Binding(
+            get: { timer.timerMode },
+            set: { timer.setTimerMode($0) }
+        )
+    }
 }
 
 private struct TBSharedCycleDotsView: View {
@@ -240,6 +319,10 @@ private func sharedTimeRangeString(_ session: TBFocusSession) -> String {
 }
 
 private func sharedSessionLabel(_ session: TBFocusSession) -> String {
+    if session.mode == .stopwatch {
+        return NSLocalizedString("HistoryView.session.stopwatch", comment: "Stopwatch focus session label")
+    }
+
     let format = session.completed
         ? NSLocalizedString("HistoryView.session.completed", comment: "Completed session label")
         : NSLocalizedString("HistoryView.session.stopped", comment: "Stopped session label")

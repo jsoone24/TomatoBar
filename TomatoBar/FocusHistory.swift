@@ -13,6 +13,18 @@ enum TBApplicationStorage {
 }
 
 struct TBFocusSession: Codable, Identifiable, Equatable {
+    private enum CodingKeys: String, CodingKey {
+        case id
+        case startedAt
+        case endedAt
+        case durationSeconds
+        case completed
+        case focusIndexInSet
+        case workIntervalsInSet
+        case plannedDurationSeconds
+        case mode
+    }
+
     let id: UUID
     let startedAt: Date
     let endedAt: Date
@@ -21,6 +33,7 @@ struct TBFocusSession: Codable, Identifiable, Equatable {
     let focusIndexInSet: Int
     let workIntervalsInSet: Int
     let plannedDurationSeconds: Int
+    let mode: TBTimerMode
 
     init(id: UUID = UUID(),
          startedAt: Date,
@@ -29,7 +42,8 @@ struct TBFocusSession: Codable, Identifiable, Equatable {
          completed: Bool,
          focusIndexInSet: Int,
          workIntervalsInSet: Int,
-         plannedDurationSeconds: Int)
+         plannedDurationSeconds: Int,
+         mode: TBTimerMode = .pomodoro)
     {
         self.id = id
         self.startedAt = startedAt
@@ -39,6 +53,20 @@ struct TBFocusSession: Codable, Identifiable, Equatable {
         self.focusIndexInSet = focusIndexInSet
         self.workIntervalsInSet = workIntervalsInSet
         self.plannedDurationSeconds = plannedDurationSeconds
+        self.mode = mode
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(UUID.self, forKey: .id)
+        startedAt = try container.decode(Date.self, forKey: .startedAt)
+        endedAt = try container.decode(Date.self, forKey: .endedAt)
+        durationSeconds = try container.decode(Int.self, forKey: .durationSeconds)
+        completed = try container.decode(Bool.self, forKey: .completed)
+        focusIndexInSet = try container.decode(Int.self, forKey: .focusIndexInSet)
+        workIntervalsInSet = try container.decode(Int.self, forKey: .workIntervalsInSet)
+        plannedDurationSeconds = try container.decode(Int.self, forKey: .plannedDurationSeconds)
+        mode = try container.decodeIfPresent(TBTimerMode.self, forKey: .mode) ?? .pomodoro
     }
 }
 
@@ -97,6 +125,30 @@ class TBFocusHistoryStore: ObservableObject {
             focusIndexInSet: focusIndexInSet,
             workIntervalsInSet: workIntervalsInSet,
             plannedDurationSeconds: plannedDurationSeconds
+        )
+        save(session, sync: true)
+    }
+
+    func recordStopwatch(id: UUID = UUID(),
+                         startedAt: Date,
+                         endedAt: Date,
+                         durationSeconds: Int)
+    {
+        let duration = max(0, durationSeconds)
+        guard duration > 0 else {
+            return
+        }
+
+        let session = TBFocusSession(
+            id: id,
+            startedAt: startedAt,
+            endedAt: endedAt,
+            durationSeconds: duration,
+            completed: true,
+            focusIndexInSet: 1,
+            workIntervalsInSet: 1,
+            plannedDurationSeconds: duration,
+            mode: .stopwatch
         )
         save(session, sync: true)
     }

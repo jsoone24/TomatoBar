@@ -60,6 +60,9 @@ final class TBCloudKitSyncStore {
             record["updatedAt"] = snapshot.updatedAt as CKRecordValue
             record["sessionID"] = snapshot.sessionID?.uuidString as CKRecordValue?
             record["sourceDeviceID"] = snapshot.sourceDeviceID as CKRecordValue?
+            record["elapsedSeconds"] = snapshot.elapsedSeconds as CKRecordValue?
+            record["runningStartedAt"] = snapshot.runningStartedAt as CKRecordValue?
+            record["pausedAt"] = snapshot.pausedAt as CKRecordValue?
 
             self.database.save(record) { _, error in
                 if let error = error {
@@ -90,6 +93,7 @@ final class TBCloudKitSyncStore {
             record["focusIndexInSet"] = session.focusIndexInSet as CKRecordValue
             record["workIntervalsInSet"] = session.workIntervalsInSet as CKRecordValue
             record["plannedDurationSeconds"] = session.plannedDurationSeconds as CKRecordValue
+            record["mode"] = session.mode.rawValue as CKRecordValue
 
             self.database.save(record) { _, error in
                 if let error = error {
@@ -240,7 +244,10 @@ private extension TBActiveTimerSnapshot {
             revision: revision,
             updatedAt: updatedAt,
             sessionID: sessionID,
-            sourceDeviceID: record["sourceDeviceID"] as? String
+            sourceDeviceID: record["sourceDeviceID"] as? String,
+            elapsedSeconds: record["elapsedSeconds"] as? Int,
+            runningStartedAt: record["runningStartedAt"] as? Date,
+            pausedAt: record["pausedAt"] as? Date
         )
     }
 }
@@ -257,6 +264,7 @@ private extension TBFocusSession {
               let plannedDurationSeconds = record["plannedDurationSeconds"] as? Int else {
             return nil
         }
+        let mode = (record["mode"] as? String).flatMap(TBTimerMode.init(rawValue:)) ?? .pomodoro
 
         self.init(
             id: id,
@@ -266,7 +274,8 @@ private extension TBFocusSession {
             completed: completed,
             focusIndexInSet: focusIndexInSet,
             workIntervalsInSet: workIntervalsInSet,
-            plannedDurationSeconds: plannedDurationSeconds
+            plannedDurationSeconds: plannedDurationSeconds,
+            mode: mode
         )
     }
 }

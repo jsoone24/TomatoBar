@@ -20,6 +20,8 @@
 "TBPopoverView.sounds.label" = "Sounds";
 "TBPopoverView.about.label" = "About";
 "TBPopoverView.quit.label" = "Quit";
+"TBTimerMode.pomodoro.label" = "Timer";
+"TBTimerMode.stopwatch.label" = "Stopwatch";
 "TBTimer.status.idle" = "Ready";
 "TBTimer.status.focus" = "Focus %d/%d";
 "TBTimer.status.shortBreak" = "Short break";
@@ -27,6 +29,14 @@
 "TBTimer.next.focus" = "Next: Focus %d/%d";
 "TBTimer.next.shortBreak" = "Next: short break %d min";
 "TBTimer.next.longBreak" = "Next: long break %d min";
+"TBStopwatch.status.idle" = "Stopwatch ready";
+"TBStopwatch.status.running" = "Open focus";
+"TBStopwatch.status.paused" = "Paused";
+"TBStopwatch.detail.idle" = "Counts focused time upward";
+"TBStopwatch.detail.running" = "Focused time is being recorded";
+"TBStopwatch.detail.paused" = "Break elapsed: %@";
+"TBStopwatch.pause.label" = "Pause";
+"TBStopwatch.resume.label" = "Resume";
 "HistoryView.today.label" = "Today";
 "HistoryView.empty.label" = "No focus sessions yet";
 "HistoryView.duration.seconds" = "%d sec";
@@ -34,6 +44,7 @@
 "HistoryView.duration.hoursMinutes" = "%dh %dm";
 "HistoryView.session.completed" = "Focus %d/%d";
 "HistoryView.session.stopped" = "Focus %d/%d stopped";
+"HistoryView.session.stopwatch" = "Stopwatch focus";
 "TBTimer.onRestStart.title" = "Time's up";
 "TBTimer.onRestStart.short.body" = "It's time for a short break!";
 "TBTimer.onRestStart.long.body" = "It's time for a long break!";

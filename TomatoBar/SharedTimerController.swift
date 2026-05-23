@@ -17,23 +17,38 @@ final class TBSharedTimerController: ObservableObject {
     @AppStorage("longRestIntervalLength") var longRestIntervalLength = 15
     @AppStorage("workIntervalsInSet") var workIntervalsInSet = 4
 
+    private static let timerModeKey = "timerMode"
+
     let focusHistory = TBFocusHistoryStore()
     let activeTimerStore = TBActiveTimerStore()
 
+    @Published private(set) var timerMode: TBTimerMode = .pomodoro
     @Published private(set) var phase: TBTimerPhase = .idle
     @Published private(set) var timeLeftString = "--:--"
     @Published private(set) var activeRestKind: TBRestKind?
     @Published private(set) var consecutiveWorkIntervals = 0
+    @Published private(set) var stopwatchPhase: TBStopwatchPhase = .idle
+    @Published private(set) var stopwatchRestElapsedString = "00:00"
 
     private var activeFocusSession: TBSharedActiveFocusSession?
     private var activeTimerRevision = 0
     private var expectedEndAt: Date?
     private var isFollowingRemoteTimer = false
     private var tickTimer: Timer?
+    private var stopwatchTickTimer: Timer?
+    private var stopwatchSessionID: UUID?
+    private var stopwatchStartedAt: Date?
+    private var stopwatchRunningStartedAt: Date?
+    private var stopwatchPausedAt: Date?
+    private var stopwatchAccumulatedSeconds = 0
     private var cancellables: Set<AnyCancellable> = []
     private let formatter = DateComponentsFormatter()
 
     var statusTitle: String {
+        if timerMode == .stopwatch {
+            return stopwatchStatusTitle
+        }
+
         switch phase {
         case .idle:
             return NSLocalizedString("TBTimer.status.idle", comment: "Idle timer status")
@@ -47,10 +62,16 @@ final class TBSharedTimerController: ObservableObject {
             return activeRestKind == .long
                 ? NSLocalizedString("TBTimer.status.longBreak", comment: "Long break timer status")
                 : NSLocalizedString("TBTimer.status.shortBreak", comment: "Short break timer status")
+        case .stopwatchRunning, .stopwatchPaused:
+            return stopwatchStatusTitle
         }
     }
 
     var nextStepDescription: String {
+        if timerMode == .stopwatch {
+            return stopwatchDetailDescription
+        }
+
         switch phase {
         case .idle:
             return String.localizedStringWithFormat(
@@ -76,6 +97,8 @@ final class TBSharedTimerController: ObservableObject {
                 nextFocusIndex,
                 safeWorkIntervalsInSet
             )
+        case .stopwatchRunning, .stopwatchPaused:
+            return stopwatchDetailDescription
         }
     }
 
@@ -91,6 +114,8 @@ final class TBSharedTimerController: ObservableObject {
             return min(consecutiveWorkIntervals, safeWorkIntervalsInSet)
         case .rest:
             return activeRestKind == .long ? safeWorkIntervalsInSet : min(consecutiveWorkIntervals, safeWorkIntervalsInSet)
+        case .stopwatchRunning, .stopwatchPaused:
+            return 0
         }
     }
 
@@ -98,7 +123,18 @@ final class TBSharedTimerController: ObservableObject {
         phase == .work ? currentFocusIndexInSet : nil
     }
 
+    var canChangeTimerMode: Bool {
+        phase == .idle && stopwatchPhase == .idle
+    }
+
     init() {
+        timerMode = TBTimerMode(
+            rawValue: UserDefaults.standard.string(forKey: Self.timerModeKey) ?? ""
+        ) ?? .pomodoro
+        if timerMode == .stopwatch {
+            timeLeftString = "00:00"
+        }
+
         formatter.unitsStyle = .positional
         formatter.allowedUnits = [.minute, .second]
         formatter.zeroFormattingBehavior = .pad
@@ -109,6 +145,11 @@ final class TBSharedTimerController: ObservableObject {
     }
 
     func startStop() {
+        if timerMode == .stopwatch {
+            toggleStopwatch()
+            return
+        }
+
         switch phase {
         case .idle:
             startWork()
@@ -117,6 +158,21 @@ final class TBSharedTimerController: ObservableObject {
             enterIdle(publish: true)
         case .rest:
             enterIdle(publish: true)
+        case .stopwatchRunning, .stopwatchPaused:
+            toggleStopwatch()
+        }
+    }
+
+    func setTimerMode(_ mode: TBTimerMode) {
+        guard canChangeTimerMode, timerMode != mode else {
+            return
+        }
+        timerMode = mode
+        UserDefaults.standard.set(mode.rawValue, forKey: Self.timerModeKey)
+        if mode == .stopwatch {
+            resetStopwatch(publish: false, record: false)
+        } else {
+            timeLeftString = "--:--"
         }
     }
 
@@ -128,6 +184,113 @@ final class TBSharedTimerController: ObservableObject {
             consecutiveWorkIntervals = 0
         }
         startWork()
+    }
+
+    private var stopwatchStatusTitle: String {
+        switch stopwatchPhase {
+        case .idle:
+            return NSLocalizedString("TBStopwatch.status.idle", comment: "Stopwatch idle status")
+        case .running:
+            return NSLocalizedString("TBStopwatch.status.running", comment: "Stopwatch running status")
+        case .paused:
+            return NSLocalizedString("TBStopwatch.status.paused", comment: "Stopwatch paused status")
+        }
+    }
+
+    private var stopwatchDetailDescription: String {
+        switch stopwatchPhase {
+        case .idle:
+            return NSLocalizedString("TBStopwatch.detail.idle", comment: "Stopwatch idle detail")
+        case .running:
+            return NSLocalizedString("TBStopwatch.detail.running", comment: "Stopwatch running detail")
+        case .paused:
+            return String.localizedStringWithFormat(
+                NSLocalizedString("TBStopwatch.detail.paused", comment: "Stopwatch paused detail"),
+                stopwatchRestElapsedString
+            )
+        }
+    }
+
+    private func toggleStopwatch() {
+        switch stopwatchPhase {
+        case .idle:
+            startStopwatch()
+        case .running:
+            pauseStopwatch()
+        case .paused:
+            resumeStopwatch()
+        }
+    }
+
+    func stopStopwatch() {
+        guard stopwatchPhase != .idle else {
+            return
+        }
+        resetStopwatch(publish: true, record: true)
+    }
+
+    private func startStopwatch() {
+        let now = Date()
+        stopwatchSessionID = UUID()
+        stopwatchStartedAt = now
+        stopwatchRunningStartedAt = now
+        stopwatchPausedAt = nil
+        stopwatchAccumulatedSeconds = 0
+        stopwatchPhase = .running
+        startStopwatchTicking()
+        publishStopwatch(phase: .stopwatchRunning)
+    }
+
+    private func pauseStopwatch() {
+        guard let runningStartedAt = stopwatchRunningStartedAt else {
+            return
+        }
+        let now = Date()
+        stopwatchAccumulatedSeconds += max(0, Int(now.timeIntervalSince(runningStartedAt)))
+        stopwatchRunningStartedAt = nil
+        stopwatchPausedAt = now
+        stopwatchPhase = .paused
+        updateStopwatchStrings()
+        publishStopwatch(phase: .stopwatchPaused)
+    }
+
+    private func resumeStopwatch() {
+        let now = Date()
+        stopwatchRunningStartedAt = now
+        stopwatchPausedAt = nil
+        stopwatchPhase = .running
+        startStopwatchTicking()
+        publishStopwatch(phase: .stopwatchRunning)
+    }
+
+    private func resetStopwatch(publish: Bool, record: Bool) {
+        let endedAt = stopwatchPausedAt ?? Date()
+        let durationSeconds = currentStopwatchElapsedSeconds
+        if record,
+           let sessionID = stopwatchSessionID,
+           let startedAt = stopwatchStartedAt {
+            focusHistory.recordStopwatch(
+                id: sessionID,
+                startedAt: startedAt,
+                endedAt: endedAt,
+                durationSeconds: durationSeconds
+            )
+        }
+
+        stopwatchTickTimer?.invalidate()
+        stopwatchTickTimer = nil
+        stopwatchPhase = .idle
+        stopwatchSessionID = nil
+        stopwatchStartedAt = nil
+        stopwatchRunningStartedAt = nil
+        stopwatchPausedAt = nil
+        stopwatchAccumulatedSeconds = 0
+        timeLeftString = timerMode == .stopwatch ? "00:00" : "--:--"
+        stopwatchRestElapsedString = "00:00"
+
+        if publish {
+            publishActiveTimer(phase: .idle, startedAt: nil, expectedEndAt: nil)
+        }
     }
 
     private func startWork() {
@@ -205,6 +368,8 @@ final class TBSharedTimerController: ObservableObject {
                 }
                 startWork()
             }
+        case .stopwatchRunning, .stopwatchPaused:
+            break
         }
     }
 
@@ -262,6 +427,42 @@ final class TBSharedTimerController: ObservableObject {
         }
     }
 
+    private func startStopwatchTicking() {
+        stopwatchTickTimer?.invalidate()
+        stopwatchTickTimer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in
+            self?.updateStopwatchStrings()
+        }
+        updateStopwatchStrings()
+    }
+
+    private func updateStopwatchStrings() {
+        timeLeftString = Self.clockString(seconds: currentStopwatchElapsedSeconds)
+        if let pausedAt = stopwatchPausedAt {
+            stopwatchRestElapsedString = Self.clockString(seconds: max(0, Int(Date().timeIntervalSince(pausedAt))))
+        } else {
+            stopwatchRestElapsedString = "00:00"
+        }
+    }
+
+    private var currentStopwatchElapsedSeconds: Int {
+        guard stopwatchPhase == .running,
+              let runningStartedAt = stopwatchRunningStartedAt else {
+            return stopwatchAccumulatedSeconds
+        }
+        return stopwatchAccumulatedSeconds + max(0, Int(Date().timeIntervalSince(runningStartedAt)))
+    }
+
+    private static func clockString(seconds: Int) -> String {
+        let safeSeconds = max(0, seconds)
+        let hours = safeSeconds / 3600
+        let minutes = (safeSeconds % 3600) / 60
+        let seconds = safeSeconds % 60
+        if hours > 0 {
+            return String(format: "%d:%02d:%02d", hours, minutes, seconds)
+        }
+        return String(format: "%02d:%02d", minutes, seconds)
+    }
+
     private func bindActiveTimerSync() {
         activeTimerStore.$snapshot
             .compactMap { $0 }
@@ -277,8 +478,14 @@ final class TBSharedTimerController: ObservableObject {
 
     private func resumeActiveTimerIfNeeded() {
         guard let snapshot = activeTimerStore.snapshot,
-              snapshot.phase != .idle,
-              snapshot.expectedEndAt ?? Date() > Date() else {
+              snapshot.phase != .idle else {
+            return
+        }
+        if snapshot.phase.isStopwatch {
+            apply(snapshot)
+            return
+        }
+        guard snapshot.expectedEndAt ?? Date() > Date() else {
             return
         }
         apply(snapshot)
@@ -289,7 +496,11 @@ final class TBSharedTimerController: ObservableObject {
         switch snapshot.phase {
         case .idle:
             enterIdle(publish: false)
+            resetStopwatch(publish: false, record: false)
         case .work:
+            timerMode = .pomodoro
+            UserDefaults.standard.set(timerMode.rawValue, forKey: Self.timerModeKey)
+            resetStopwatch(publish: false, record: false)
             let startedAt = snapshot.startedAt ?? Date()
             let expectedEndAt = snapshot.expectedEndAt ?? startedAt.addingTimeInterval(TimeInterval(workIntervalLength * 60))
             let focusIndexInSet = max(snapshot.focusIndexInSet, 1)
@@ -306,6 +517,9 @@ final class TBSharedTimerController: ObservableObject {
             )
             startTicking(until: expectedEndAt)
         case .rest:
+            timerMode = .pomodoro
+            UserDefaults.standard.set(timerMode.rawValue, forKey: Self.timerModeKey)
+            resetStopwatch(publish: false, record: false)
             let startedAt = snapshot.startedAt ?? Date()
             let expectedEndAt = snapshot.expectedEndAt ?? startedAt.addingTimeInterval(TimeInterval(shortRestIntervalLength * 60))
             phase = .rest
@@ -314,6 +528,9 @@ final class TBSharedTimerController: ObservableObject {
             consecutiveWorkIntervals = min(max(snapshot.focusIndexInSet, 0), max(snapshot.workIntervalsInSet, 1))
             activeFocusSession = nil
             startTicking(until: expectedEndAt)
+        case .stopwatchRunning, .stopwatchPaused:
+            enterIdle(publish: false)
+            configureStopwatch(from: snapshot)
         }
     }
 
@@ -336,6 +553,44 @@ final class TBSharedTimerController: ObservableObject {
             sessionID: sessionID,
             sourceDeviceID: TBDeviceIdentity.current
         ))
+    }
+
+    private func publishStopwatch(phase: TBTimerPhase) {
+        activeTimerRevision += 1
+        activeTimerStore.save(TBActiveTimerSnapshot(
+            phase: phase,
+            startedAt: stopwatchStartedAt,
+            expectedEndAt: nil,
+            focusIndexInSet: 0,
+            workIntervalsInSet: 0,
+            restKind: nil,
+            revision: activeTimerRevision,
+            updatedAt: Date(),
+            sessionID: stopwatchSessionID,
+            sourceDeviceID: TBDeviceIdentity.current,
+            elapsedSeconds: stopwatchAccumulatedSeconds,
+            runningStartedAt: stopwatchRunningStartedAt,
+            pausedAt: stopwatchPausedAt
+        ))
+    }
+
+    private func configureStopwatch(from snapshot: TBActiveTimerSnapshot) {
+        timerMode = .stopwatch
+        UserDefaults.standard.set(timerMode.rawValue, forKey: Self.timerModeKey)
+        stopwatchSessionID = snapshot.sessionID ?? UUID()
+        stopwatchStartedAt = snapshot.startedAt ?? Date()
+        stopwatchAccumulatedSeconds = max(0, snapshot.elapsedSeconds ?? 0)
+        stopwatchRunningStartedAt = snapshot.runningStartedAt
+        stopwatchPausedAt = snapshot.pausedAt
+        stopwatchPhase = snapshot.phase == .stopwatchRunning ? .running : .paused
+        if stopwatchPhase == .running, stopwatchRunningStartedAt == nil {
+            stopwatchRunningStartedAt = snapshot.updatedAt
+        }
+        if stopwatchPhase == .paused, stopwatchPausedAt == nil {
+            stopwatchPausedAt = snapshot.updatedAt
+        }
+        startStopwatchTicking()
+        updateStopwatchStrings()
     }
 
     private var currentFocusIndexInSet: Int {

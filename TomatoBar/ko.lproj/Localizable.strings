@@ -20,6 +20,8 @@
 "TBPopoverView.sounds.label" = "사운드";
 "TBPopoverView.about.label" = "앱 정보";
 "TBPopoverView.quit.label" = "종료";
+"TBTimerMode.pomodoro.label" = "타이머";
+"TBTimerMode.stopwatch.label" = "스톱워치";
 "TBTimer.status.idle" = "준비";
 "TBTimer.status.focus" = "집중 %d/%d";
 "TBTimer.status.shortBreak" = "짧은 휴식";
@@ -27,6 +29,14 @@
 "TBTimer.next.focus" = "다음: 집중 %d/%d";
 "TBTimer.next.shortBreak" = "다음: 짧은 휴식 %d분";
 "TBTimer.next.longBreak" = "다음: 긴 휴식 %d분";
+"TBStopwatch.status.idle" = "스톱워치 준비";
+"TBStopwatch.status.running" = "자유 집중";
+"TBStopwatch.status.paused" = "일시 정지";
+"TBStopwatch.detail.idle" = "집중한 시간이 위로 누적됩니다";
+"TBStopwatch.detail.running" = "집중 시간이 기록 중입니다";
+"TBStopwatch.detail.paused" = "휴식 경과: %@";
+"TBStopwatch.pause.label" = "일시 정지";
+"TBStopwatch.resume.label" = "재개";
 "HistoryView.today.label" = "오늘";
 "HistoryView.empty.label" = "아직 집중 기록이 없습니다";
 "HistoryView.duration.seconds" = "%d초";
@@ -34,6 +44,7 @@
 "HistoryView.duration.hoursMinutes" = "%d시간 %d분";
 "HistoryView.session.completed" = "집중 %d/%d";
 "HistoryView.session.stopped" = "집중 %d/%d 중지됨";
+"HistoryView.session.stopwatch" = "스톱워치 집중";
 "TBTimer.onRestStart.title" = "시간 종료";
 "TBTimer.onRestStart.short.body" = "짧은 휴식을 취할 시간입니다!";
 "TBTimer.onRestStart.long.body" = "긴 휴식을 취할 시간입니다!";
