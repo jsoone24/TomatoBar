@@ -8,10 +8,14 @@ enum TBTimerMode: String, Codable, CaseIterable, Identifiable {
 }
 
 enum TBTimerPhase: String, Codable, Equatable {
-    case idle, work, rest, stopwatchRunning, stopwatchPaused
+    case idle, work, rest, workPaused, restPaused, stopwatchRunning, stopwatchPaused
 
     var isStopwatch: Bool {
         self == .stopwatchRunning || self == .stopwatchPaused
+    }
+
+    var isPausedPomodoro: Bool {
+        self == .workPaused || self == .restPaused
     }
 }
 
@@ -36,6 +40,7 @@ struct TBActiveTimerSnapshot: Codable, Equatable {
     let elapsedSeconds: Int?
     let runningStartedAt: Date?
     let pausedAt: Date?
+    let completedWorkSets: Int?
 
     init(phase: TBTimerPhase,
          startedAt: Date?,
@@ -48,7 +53,8 @@ struct TBActiveTimerSnapshot: Codable, Equatable {
          sessionID: UUID?,
          elapsedSeconds: Int? = nil,
          runningStartedAt: Date? = nil,
-         pausedAt: Date? = nil) {
+         pausedAt: Date? = nil,
+         completedWorkSets: Int? = nil) {
         self.phase = phase
         self.startedAt = startedAt
         self.expectedEndAt = expectedEndAt
@@ -61,6 +67,7 @@ struct TBActiveTimerSnapshot: Codable, Equatable {
         self.elapsedSeconds = elapsedSeconds
         self.runningStartedAt = runningStartedAt
         self.pausedAt = pausedAt
+        self.completedWorkSets = completedWorkSets
     }
 }
 

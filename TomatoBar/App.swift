@@ -9,6 +9,8 @@ extension NSImage.Name {
 }
 
 private let digitFont = NSFont.monospacedDigitSystemFont(ofSize: 0, weight: .regular)
+private let statusTitleCharacterWidth: CGFloat = 8
+private let statusTitleBaseWidth: CGFloat = 28
 
 @main
 struct TBApp: App {
@@ -31,6 +33,13 @@ class TBStatusItem: NSObject, NSApplicationDelegate {
     static var shared: TBStatusItem!
 
     func applicationDidFinishLaunching(_: Notification) {
+        statusBarItem = NSStatusBar.system.statusItem(
+            withLength: NSStatusItem.variableLength
+        )
+        statusBarItem?.button?.imagePosition = .imageLeft
+        setIcon(name: .idle)
+        statusBarItem?.button?.action = #selector(TBStatusItem.togglePopover(_:))
+
         let view = TBPopoverView()
 
         popover.behavior = .transient
@@ -40,16 +49,16 @@ class TBStatusItem: NSObject, NSApplicationDelegate {
             popover.contentSize.height = contentViewController.view.intrinsicContentSize.height
             popover.contentSize.width = 300
         }
-
-        statusBarItem = NSStatusBar.system.statusItem(
-            withLength: NSStatusItem.variableLength
-        )
-        statusBarItem?.button?.imagePosition = .imageLeft
-        setIcon(name: .idle)
-        statusBarItem?.button?.action = #selector(TBStatusItem.togglePopover(_:))
     }
 
     func setTitle(title: String?) {
+        if let title = title {
+            let visibleCharacterCount = max(title.count, 5)
+            statusBarItem?.length = statusTitleBaseWidth + CGFloat(visibleCharacterCount) * statusTitleCharacterWidth
+        } else {
+            statusBarItem?.length = NSStatusItem.squareLength
+        }
+
         let paragraphStyle = NSMutableParagraphStyle()
         paragraphStyle.lineHeightMultiple = 0.9
         paragraphStyle.alignment = NSTextAlignment.center
@@ -62,10 +71,30 @@ class TBStatusItem: NSObject, NSApplicationDelegate {
             ]
         )
         statusBarItem?.button?.attributedTitle = attributedTitle
+        realignPopoverIfNeeded()
     }
 
     func setIcon(name: NSImage.Name) {
         statusBarItem?.button?.image = NSImage(named: name)
+    }
+
+    func setPopoverContentSize(width: CGFloat, height: CGFloat) {
+        let size = NSSize(width: width, height: height)
+        guard popover.contentSize != size else {
+            return
+        }
+
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self else {
+                return
+            }
+            NSAnimationContext.runAnimationGroup { context in
+                context.duration = 0
+                context.allowsImplicitAnimation = false
+                self.popover.contentSize = size
+            }
+            self.realignPopoverIfNeeded()
+        }
     }
 
     func showPopover(_: AnyObject?) {
@@ -84,6 +113,22 @@ class TBStatusItem: NSObject, NSApplicationDelegate {
             closePopover(sender)
         } else {
             showPopover(sender)
+        }
+    }
+
+    private func realignPopoverIfNeeded() {
+        guard popover.isShown else {
+            return
+        }
+
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self,
+                  self.popover.isShown,
+                  let button = self.statusBarItem?.button else {
+                return
+            }
+
+            self.popover.positioningRect = button.bounds
         }
     }
 }

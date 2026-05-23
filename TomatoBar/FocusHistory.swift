@@ -104,9 +104,10 @@ class TBFocusHistoryStore: ObservableObject {
                 completed: Bool,
                 focusIndexInSet: Int,
                 workIntervalsInSet: Int,
-                plannedDurationSeconds: Int)
+                plannedDurationSeconds: Int,
+                durationSeconds: Int? = nil)
     {
-        let duration = max(0, min(Int(endedAt.timeIntervalSince(startedAt)), plannedDurationSeconds))
+        let duration = max(0, min(durationSeconds ?? Int(endedAt.timeIntervalSince(startedAt)), plannedDurationSeconds))
         guard duration > 0 else {
             return
         }
@@ -158,18 +159,32 @@ class TBFocusHistoryStore: ObservableObject {
             .reduce(0) { $0 + overlapDuration(of: $1, from: dayStart, to: dayEnd) }
     }
 
-    func recentSessions(limit: Int = 5) -> [TBFocusSession] {
-        Array(sessions.prefix(limit))
+    func sessions(on date: Date = Date()) -> [TBFocusSession] {
+        let dayStart = calendar.startOfDay(for: date)
+        guard let dayEnd = calendar.date(byAdding: .day, value: 1, to: dayStart) else {
+            return []
+        }
+
+        return sessions.filter { overlapDuration(of: $0, from: dayStart, to: dayEnd) > 0 }
     }
 
-    func dailyTotals(endingAt date: Date = Date(), days: Int = 7) -> [TBDailyFocusTotal] {
+    func hasSessions(on date: Date = Date()) -> Bool {
+        let dayStart = calendar.startOfDay(for: date)
+        guard let dayEnd = calendar.date(byAdding: .day, value: 1, to: dayStart) else {
+            return false
+        }
+
+        return sessions.contains { overlapDuration(of: $0, from: dayStart, to: dayEnd) > 0 }
+    }
+
+    func dailyTotals(from startDate: Date, days: Int) -> [TBDailyFocusTotal] {
         guard days > 0 else {
             return []
         }
 
-        let endOfToday = calendar.startOfDay(for: date)
-        return (0 ..< days).reversed().compactMap { offset in
-            guard let day = calendar.date(byAdding: .day, value: -offset, to: endOfToday) else {
+        let startOfFirstDay = calendar.startOfDay(for: startDate)
+        return (0 ..< days).compactMap { offset in
+            guard let day = calendar.date(byAdding: .day, value: offset, to: startOfFirstDay) else {
                 return nil
             }
             return TBDailyFocusTotal(
@@ -177,6 +192,39 @@ class TBFocusHistoryStore: ObservableObject {
                 durationSeconds: totalFocusTime(on: day)
             )
         }
+    }
+
+    func deleteSession(id: UUID) {
+        guard let index = sessions.firstIndex(where: { $0.id == id }) else {
+            return
+        }
+
+        sessions.remove(at: index)
+        persist()
+    }
+
+    func deleteSessions(on date: Date = Date()) {
+        let dayStart = calendar.startOfDay(for: date)
+        guard let dayEnd = calendar.date(byAdding: .day, value: 1, to: dayStart) else {
+            return
+        }
+
+        let originalCount = sessions.count
+        sessions.removeAll { overlapDuration(of: $0, from: dayStart, to: dayEnd) > 0 }
+        guard sessions.count != originalCount else {
+            return
+        }
+
+        persist()
+    }
+
+    func deleteAllSessions() {
+        guard !sessions.isEmpty else {
+            return
+        }
+
+        sessions.removeAll()
+        persist()
     }
 
     private func load() {
@@ -266,6 +314,13 @@ class TBFocusHistoryStore: ObservableObject {
     private func overlapDuration(of session: TBFocusSession, from rangeStart: Date, to rangeEnd: Date) -> Int {
         let start = max(session.startedAt, rangeStart)
         let end = min(session.endedAt, rangeEnd)
-        return max(0, Int(end.timeIntervalSince(start)))
+        let overlapSeconds = max(0, Int(end.timeIntervalSince(start)))
+        let wallDurationSeconds = max(1, Int(session.endedAt.timeIntervalSince(session.startedAt)))
+        guard session.durationSeconds < wallDurationSeconds else {
+            return overlapSeconds
+        }
+
+        let scaledDuration = Double(overlapSeconds) / Double(wallDurationSeconds) * Double(session.durationSeconds)
+        return Int(scaledDuration.rounded())
     }
 }

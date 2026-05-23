@@ -9,6 +9,8 @@ private struct TBActiveFocusSession {
     let focusIndexInSet: Int
     let workIntervalsInSet: Int
     let plannedDurationSeconds: Int
+    var accumulatedFocusSeconds: Int
+    var runningStartedAt: Date?
 }
 
 class TBTimer: ObservableObject {
@@ -20,6 +22,7 @@ class TBTimer: ObservableObject {
     @AppStorage("shortRestIntervalLength") var shortRestIntervalLength = 5
     @AppStorage("longRestIntervalLength") var longRestIntervalLength = 15
     @AppStorage("workIntervalsInSet") var workIntervalsInSet = 4
+    @AppStorage("workSetsToRepeat") var workSetsToRepeat = 0
     // This preference is "hidden"
     @AppStorage("overrunTimeLimit") var overrunTimeLimit = -60.0
 
@@ -29,6 +32,7 @@ class TBTimer: ObservableObject {
     public let activeTimerStore = TBActiveTimerStore()
     @Published private(set) var timerMode: TBTimerMode = .pomodoro
     @Published private var consecutiveWorkIntervals: Int = 0
+    @Published private var completedWorkSets: Int = 0
     @Published private var activeRestKind: TBRestKind?
     @Published private(set) var stopwatchPhase: TBStopwatchPhase = .idle
     @Published private(set) var stopwatchRestElapsedString = "00:00"
@@ -36,6 +40,7 @@ class TBTimer: ObservableObject {
     private var activeTimerRevision: Int = 0
     private var notificationCenter = TBNotificationCenter()
     private var finishTime: Date?
+    private var pausedPomodoroRemainingSeconds: Int?
     private var stopwatchSessionID: UUID?
     private var stopwatchStartedAt: Date?
     private var stopwatchRunningStartedAt: Date?
@@ -65,6 +70,8 @@ class TBTimer: ObservableObject {
                 return NSLocalizedString("TBTimer.status.longBreak", comment: "Long break timer status")
             }
             return NSLocalizedString("TBTimer.status.shortBreak", comment: "Short break timer status")
+        case .pausedWork, .pausedRest:
+            return NSLocalizedString("TBTimer.status.paused", comment: "Paused timer status")
         }
     }
 
@@ -73,32 +80,39 @@ class TBTimer: ObservableObject {
             return stopwatchDetailDescription
         }
 
+        let description: String
         switch stateMachine.state {
         case .idle:
-            return String.localizedStringWithFormat(
+            description = String.localizedStringWithFormat(
                 NSLocalizedString("TBTimer.next.focus", comment: "Next focus timer status"),
                 1,
                 safeWorkIntervalsInSet
             )
-        case .work:
+        case .work, .pausedWork:
             if currentFocusIndexInSet >= safeWorkIntervalsInSet {
-                return String.localizedStringWithFormat(
+                description = String.localizedStringWithFormat(
                     NSLocalizedString("TBTimer.next.longBreak", comment: "Next long break status"),
                     longRestIntervalLength
                 )
+                return nextDescriptionWithSetProgress(description)
             }
-            return String.localizedStringWithFormat(
+            description = String.localizedStringWithFormat(
                 NSLocalizedString("TBTimer.next.shortBreak", comment: "Next short break status"),
                 shortRestIntervalLength
             )
-        case .rest:
+        case .rest, .pausedRest:
+            if shouldStopAfterCurrentRest {
+                description = NSLocalizedString("TBTimer.next.ready", comment: "Next ready status")
+                return nextDescriptionWithSetProgress(description)
+            }
             let nextFocusIndex = activeRestKind == .long ? 1 : min(consecutiveWorkIntervals + 1, safeWorkIntervalsInSet)
-            return String.localizedStringWithFormat(
+            description = String.localizedStringWithFormat(
                 NSLocalizedString("TBTimer.next.focus", comment: "Next focus timer status"),
                 nextFocusIndex,
                 safeWorkIntervalsInSet
             )
         }
+        return nextDescriptionWithSetProgress(description)
     }
 
     var cycleTotal: Int {
@@ -109,15 +123,15 @@ class TBTimer: ObservableObject {
         switch stateMachine.state {
         case .idle:
             return 0
-        case .work:
+        case .work, .pausedWork:
             return min(consecutiveWorkIntervals, safeWorkIntervalsInSet)
-        case .rest:
+        case .rest, .pausedRest:
             return activeRestKind == .long ? safeWorkIntervalsInSet : min(consecutiveWorkIntervals, safeWorkIntervalsInSet)
         }
     }
 
     var cycleActiveIndex: Int? {
-        guard stateMachine.state == .work else {
+        guard stateMachine.state == .work || stateMachine.state == .pausedWork else {
             return nil
         }
         return currentFocusIndexInSet
@@ -127,21 +141,84 @@ class TBTimer: ObservableObject {
         stateMachine.state == .idle && stopwatchPhase == .idle
     }
 
+    var isPomodoroActive: Bool {
+        stateMachine.state != .idle
+    }
+
+    var isPomodoroPaused: Bool {
+        stateMachine.state == .pausedWork || stateMachine.state == .pausedRest
+    }
+
+    func liveFocusDuration(on date: Date = Date(), calendar: Calendar = .current) -> Int {
+        let startedAt: Date?
+        let durationSeconds: Int
+
+        if timerMode == .stopwatch {
+            startedAt = stopwatchStartedAt
+            durationSeconds = currentStopwatchElapsedSeconds
+        } else {
+            startedAt = activeFocusSession?.startedAt
+            durationSeconds = currentActiveFocusDurationSeconds()
+        }
+
+        guard let startedAt, durationSeconds > 0 else {
+            return 0
+        }
+
+        return focusDurationOverlap(startedAt: startedAt,
+                                    durationSeconds: durationSeconds,
+                                    on: date,
+                                    calendar: calendar)
+    }
+
     private var currentFocusIndexInSet: Int {
-        min(max(consecutiveWorkIntervals + (stateMachine.state == .work ? 1 : 0), 1), safeWorkIntervalsInSet)
+        let isActiveFocus = stateMachine.state == .work || stateMachine.state == .pausedWork
+        return min(max(consecutiveWorkIntervals + (isActiveFocus ? 1 : 0), 1), safeWorkIntervalsInSet)
     }
 
     private var safeWorkIntervalsInSet: Int {
         max(workIntervalsInSet, 1)
     }
 
+    private var safeWorkSetsToRepeat: Int {
+        max(workSetsToRepeat, 0)
+    }
+
+    private var shouldStopAfterCurrentRest: Bool {
+        stopAfterBreak || isCurrentRestFinalRepeatedSet
+    }
+
+    private var isCurrentRestFinalRepeatedSet: Bool {
+        activeRestKind == .long
+            && safeWorkSetsToRepeat > 0
+            && completedWorkSets + 1 >= safeWorkSetsToRepeat
+    }
+
+    private var setProgressDescription: String? {
+        guard safeWorkSetsToRepeat > 0 else {
+            return nil
+        }
+
+        return String.localizedStringWithFormat(
+            NSLocalizedString("TBTimer.setProgress", comment: "Timer set progress"),
+            min(completedWorkSets + 1, safeWorkSetsToRepeat),
+            safeWorkSetsToRepeat
+        )
+    }
+
+    private func nextDescriptionWithSetProgress(_ description: String) -> String {
+        guard let setProgressDescription = setProgressDescription else {
+            return description
+        }
+
+        return "\(setProgressDescription) · \(description)"
+    }
+
     init() {
         timerMode = TBTimerMode(
             rawValue: UserDefaults.standard.string(forKey: Self.timerModeKey) ?? ""
         ) ?? .pomodoro
-        if timerMode == .stopwatch {
-            timeLeftString = "00:00"
-        }
+        timeLeftString = idleTimeString
 
         /*
          * State diagram
@@ -165,14 +242,21 @@ class TBTimer: ObservableObject {
          *
          */
         stateMachine.addRoutes(event: .startStop, transitions: [
-            .idle => .work, .work => .idle, .rest => .idle,
+            .idle => .work,
+            .work => .pausedWork,
+            .rest => .pausedRest,
+            .pausedWork => .work,
+            .pausedRest => .rest,
+        ])
+        stateMachine.addRoutes(event: .stop, transitions: [
+            .work => .idle, .rest => .idle, .pausedWork => .idle, .pausedRest => .idle,
         ])
         stateMachine.addRoutes(event: .timerFired, transitions: [.work => .rest])
         stateMachine.addRoutes(event: .timerFired, transitions: [.rest => .idle]) { _ in
-            self.stopAfterBreak
+            self.shouldStopAfterCurrentRest
         }
         stateMachine.addRoutes(event: .timerFired, transitions: [.rest => .work]) { _ in
-            !self.stopAfterBreak
+            !self.shouldStopAfterCurrentRest
         }
         stateMachine.addRoutes(event: .skipRest, transitions: [.rest => .work])
         stateMachine.addRoute(.idle => .rest)
@@ -183,6 +267,10 @@ class TBTimer: ObservableObject {
          * "End"    handlers are called when time interval ended or was cancelled
          */
         stateMachine.addAnyHandler(.any => .work, handler: onWorkStart)
+        stateMachine.addAnyHandler(.any => .pausedWork, handler: onPausedWorkStart)
+        stateMachine.addAnyHandler(.any => .pausedRest, handler: onPausedRestStart)
+        stateMachine.addAnyHandler(.work => .pausedWork, order: 0, handler: onPomodoroPause)
+        stateMachine.addAnyHandler(.rest => .pausedRest, handler: onPomodoroPause)
         stateMachine.addAnyHandler(.work => .rest, order: 0, handler: onWorkFinish)
         stateMachine.addAnyHandler(.work => .any, order: 1, handler: onWorkEnd)
         stateMachine.addAnyHandler(.any => .rest, handler: onRestStart)
@@ -209,6 +297,7 @@ class TBTimer: ObservableObject {
                             andSelector: #selector(handleGetURLEvent(_:withReplyEvent:)),
                             forEventClass: AEEventClass(kInternetEventClass),
                             andEventID: AEEventID(kAEGetURL))
+        updateMenuBarTitle()
     }
 
     @objc func handleGetURLEvent(_ event: NSAppleEventDescriptor,
@@ -246,6 +335,14 @@ class TBTimer: ObservableObject {
         stateMachine <-! .startStop
     }
 
+    func stopPomodoro() {
+        guard timerMode == .pomodoro, isPomodoroActive else {
+            return
+        }
+
+        stateMachine <-! .stop
+    }
+
     func setTimerMode(_ mode: TBTimerMode) {
         guard canChangeTimerMode, timerMode != mode else {
             return
@@ -255,8 +352,8 @@ class TBTimer: ObservableObject {
         if mode == .stopwatch {
             resetStopwatch(publish: false, record: false)
         } else {
-            timeLeftString = ""
-            TBStatusItem.shared.setTitle(title: nil)
+            timeLeftString = idleTimeString
+            updateMenuBarTitle()
         }
     }
 
@@ -366,9 +463,9 @@ class TBTimer: ObservableObject {
         stopwatchPausedAt = nil
         stopwatchAccumulatedSeconds = 0
         stopwatchRestElapsedString = "00:00"
-        timeLeftString = timerMode == .stopwatch ? "00:00" : ""
+        timeLeftString = idleTimeString
         TBStatusItem.shared.setIcon(name: .idle)
-        TBStatusItem.shared.setTitle(title: nil)
+        updateMenuBarTitle()
 
         if publish {
             publishActiveTimer(phase: .idle, startedAt: nil, expectedEndAt: nil)
@@ -381,15 +478,20 @@ class TBTimer: ObservableObject {
             return
         }
 
+        if isPomodoroPaused {
+            updateMenuBarTitle()
+            return
+        }
+
         guard let finishTime = finishTime, timer != nil else {
-            timeLeftString = ""
-            TBStatusItem.shared.setTitle(title: nil)
+            timeLeftString = idleTimeString
+            updateMenuBarTitle()
             return
         }
 
         let timeLeft = max(finishTime.timeIntervalSinceNow, 0)
         timeLeftString = timerFormatter.string(from: timeLeft) ?? "00:00"
-        TBStatusItem.shared.setTitle(title: showTimerInMenuBar ? timeLeftString : nil)
+        updateMenuBarTitle()
     }
 
     @discardableResult
@@ -434,7 +536,7 @@ class TBTimer: ObservableObject {
                  Stop the timer if it goes beyond an overrun time limit.
                  */
                 if timeLeft < overrunTimeLimit {
-                    stateMachine <-! .startStop
+                    stateMachine <-! .stop
                 } else {
                     stateMachine <-! .timerFired
                 }
@@ -473,6 +575,14 @@ class TBTimer: ObservableObject {
             stopwatchRestElapsedString = "00:00"
         }
 
+        updateMenuBarTitle()
+    }
+
+    private var idleTimeString: String {
+        "00:00"
+    }
+
+    private func updateMenuBarTitle() {
         TBStatusItem.shared.setTitle(title: showTimerInMenuBar ? timeLeftString : nil)
     }
 
@@ -501,7 +611,154 @@ class TBTimer: ObservableObject {
         }
     }
 
+    private func onPausedWorkStart(context ctx: TBStateMachine.Context) {
+        guard let snapshot = snapshot(from: ctx) else {
+            return
+        }
+        configurePausedWork(from: snapshot)
+    }
+
+    private func onPausedRestStart(context ctx: TBStateMachine.Context) {
+        guard let snapshot = snapshot(from: ctx) else {
+            return
+        }
+        configurePausedRest(from: snapshot)
+    }
+
+    private func onPomodoroPause(context ctx: TBStateMachine.Context) {
+        let now = Date()
+        let remainingSeconds = pauseCountdown(at: now)
+        TBStatusItem.shared.setIcon(name: .idle)
+
+        if ctx.fromState == .work {
+            pauseActiveFocusSession(at: now)
+            player.stopTicking()
+            publishActiveTimer(
+                phase: .workPaused,
+                startedAt: activeFocusSession?.startedAt,
+                expectedEndAt: nil,
+                focusIndexInSet: currentFocusIndexInSet,
+                sessionID: activeFocusSession?.id,
+                elapsedSeconds: currentActiveFocusDurationSeconds(at: now),
+                pausedAt: now
+            )
+        } else {
+            publishActiveTimer(
+                phase: .restPaused,
+                startedAt: nil,
+                expectedEndAt: nil,
+                focusIndexInSet: min(consecutiveWorkIntervals, safeWorkIntervalsInSet),
+                restKind: activeRestKind,
+                elapsedSeconds: remainingSeconds,
+                pausedAt: now
+            )
+        }
+    }
+
+    private func pauseCountdown(at now: Date) -> Int {
+        let remainingSeconds = max(0, Int(ceil(finishTime?.timeIntervalSince(now) ?? 0)))
+        pausedPomodoroRemainingSeconds = remainingSeconds
+        let currentTimer = timer
+        timer = nil
+        finishTime = nil
+        currentTimer?.cancel()
+        timeLeftString = timerFormatter.string(from: TimeInterval(remainingSeconds)) ?? "00:00"
+        updateMenuBarTitle()
+        return remainingSeconds
+    }
+
+    private func resumePausedPomodoro(from ctx: TBStateMachine.Context) {
+        let now = Date()
+        let remainingSeconds = max(pausedPomodoroRemainingSeconds ?? 0, 1)
+        let expectedEndAt = now.addingTimeInterval(TimeInterval(remainingSeconds))
+        pausedPomodoroRemainingSeconds = nil
+
+        if ctx.toState == .work {
+            resumeActiveFocusSession(at: now)
+            TBStatusItem.shared.setIcon(name: .work)
+            startTimer(until: expectedEndAt)
+            player.startTicking()
+            publishActiveTimer(
+                phase: .work,
+                startedAt: activeFocusSession?.startedAt,
+                expectedEndAt: expectedEndAt,
+                focusIndexInSet: currentFocusIndexInSet,
+                sessionID: activeFocusSession?.id,
+                elapsedSeconds: currentActiveFocusDurationSeconds(at: now)
+            )
+        } else {
+            TBStatusItem.shared.setIcon(name: activeRestKind == .long ? .longRest : .shortRest)
+            startTimer(until: expectedEndAt)
+            publishActiveTimer(
+                phase: .rest,
+                startedAt: now,
+                expectedEndAt: expectedEndAt,
+                focusIndexInSet: min(consecutiveWorkIntervals, safeWorkIntervalsInSet),
+                restKind: activeRestKind,
+                sessionID: nil
+            )
+        }
+    }
+
+    private func pauseActiveFocusSession(at now: Date) {
+        guard var session = activeFocusSession else {
+            return
+        }
+
+        if let runningStartedAt = session.runningStartedAt {
+            session.accumulatedFocusSeconds = min(
+                session.plannedDurationSeconds,
+                session.accumulatedFocusSeconds + max(0, Int(now.timeIntervalSince(runningStartedAt)))
+            )
+        }
+        session.runningStartedAt = nil
+        activeFocusSession = session
+    }
+
+    private func resumeActiveFocusSession(at now: Date) {
+        guard var session = activeFocusSession else {
+            return
+        }
+
+        session.runningStartedAt = now
+        activeFocusSession = session
+    }
+
+    private func currentActiveFocusDurationSeconds(at now: Date = Date()) -> Int {
+        guard let session = activeFocusSession else {
+            return 0
+        }
+
+        let runningSeconds: Int
+        if let runningStartedAt = session.runningStartedAt {
+            runningSeconds = max(0, Int(now.timeIntervalSince(runningStartedAt)))
+        } else {
+            runningSeconds = 0
+        }
+        return min(session.plannedDurationSeconds, session.accumulatedFocusSeconds + runningSeconds)
+    }
+
+    private func focusDurationOverlap(startedAt: Date,
+                                      durationSeconds: Int,
+                                      on date: Date,
+                                      calendar: Calendar) -> Int {
+        let dayStart = calendar.startOfDay(for: date)
+        guard let dayEnd = calendar.date(byAdding: .day, value: 1, to: dayStart) else {
+            return 0
+        }
+
+        let focusEnd = startedAt.addingTimeInterval(TimeInterval(durationSeconds))
+        let overlapStart = max(startedAt, dayStart)
+        let overlapEnd = min(focusEnd, dayEnd)
+        return max(0, Int(overlapEnd.timeIntervalSince(overlapStart)))
+    }
+
     private func onWorkStart(context ctx: TBStateMachine.Context) {
+        if ctx.fromState == .pausedWork {
+            resumePausedPomodoro(from: ctx)
+            return
+        }
+
         if let snapshot = snapshot(from: ctx) {
             configureWork(from: snapshot)
             return
@@ -524,7 +781,8 @@ class TBTimer: ObservableObject {
             startedAt: startedAt,
             expectedEndAt: expectedEndAt,
             focusIndexInSet: focusIndexInSet,
-            sessionID: activeFocusSession?.id
+            sessionID: activeFocusSession?.id,
+            elapsedSeconds: 0
         )
     }
 
@@ -545,6 +803,11 @@ class TBTimer: ObservableObject {
     }
 
     private func onRestStart(context ctx: TBStateMachine.Context) {
+        if ctx.fromState == .pausedRest {
+            resumePausedPomodoro(from: ctx)
+            return
+        }
+
         if let snapshot = snapshot(from: ctx) {
             configureRest(from: snapshot)
             return
@@ -584,6 +847,7 @@ class TBTimer: ObservableObject {
         let finishedLongRest = activeRestKind == .long
         activeRestKind = nil
         if finishedLongRest {
+            completedWorkSets += 1
             consecutiveWorkIntervals = 0
         }
         if ctx.event == .skipRest || snapshot(from: ctx) != nil {
@@ -597,14 +861,16 @@ class TBTimer: ObservableObject {
     }
 
     private func onIdleStart(context ctx: TBStateMachine.Context) {
-        if ctx.fromState == .work, snapshot(from: ctx) == nil {
+        if (ctx.fromState == .work || ctx.fromState == .pausedWork), snapshot(from: ctx) == nil {
             finishActiveFocusSession(completed: false)
         }
         stopTimer()
         TBStatusItem.shared.setIcon(name: .idle)
         activeRestKind = nil
         activeFocusSession = nil
+        pausedPomodoroRemainingSeconds = nil
         consecutiveWorkIntervals = 0
+        completedWorkSets = 0
         if snapshot(from: ctx) == nil {
             publishActiveTimer(phase: .idle, startedAt: nil, expectedEndAt: nil)
         }
@@ -615,10 +881,10 @@ class TBTimer: ObservableObject {
             return
         }
 
-        let plannedEnd = activeFocusSession.startedAt.addingTimeInterval(
-            TimeInterval(activeFocusSession.plannedDurationSeconds)
-        )
-        let endedAt = completed ? plannedEnd : min(Date(), plannedEnd)
+        let durationSeconds = completed
+            ? activeFocusSession.plannedDurationSeconds
+            : currentActiveFocusDurationSeconds()
+        let endedAt = Date()
         focusHistory.record(
             id: activeFocusSession.id,
             startedAt: activeFocusSession.startedAt,
@@ -626,7 +892,8 @@ class TBTimer: ObservableObject {
             completed: completed,
             focusIndexInSet: activeFocusSession.focusIndexInSet,
             workIntervalsInSet: activeFocusSession.workIntervalsInSet,
-            plannedDurationSeconds: activeFocusSession.plannedDurationSeconds
+            plannedDurationSeconds: activeFocusSession.plannedDurationSeconds,
+            durationSeconds: durationSeconds
         )
         self.activeFocusSession = nil
     }
@@ -636,7 +903,9 @@ class TBTimer: ObservableObject {
                                     expectedEndAt: Date?,
                                     focusIndexInSet: Int = 0,
                                     restKind: TBRestKind? = nil,
-                                    sessionID: UUID? = nil) {
+                                    sessionID: UUID? = nil,
+                                    elapsedSeconds: Int? = nil,
+                                    pausedAt: Date? = nil) {
         activeTimerRevision += 1
         activeTimerStore.save(TBActiveTimerSnapshot(
             phase: phase,
@@ -647,7 +916,10 @@ class TBTimer: ObservableObject {
             restKind: restKind,
             revision: activeTimerRevision,
             updatedAt: Date(),
-            sessionID: sessionID
+            sessionID: sessionID,
+            elapsedSeconds: elapsedSeconds,
+            pausedAt: pausedAt,
+            completedWorkSets: completedWorkSets
         ))
     }
 
@@ -675,6 +947,10 @@ class TBTimer: ObservableObject {
             return
         }
         if snapshot.phase.isStopwatch {
+            applyActiveTimerSnapshot(snapshot)
+            return
+        }
+        if snapshot.phase.isPausedPomodoro {
             applyActiveTimerSnapshot(snapshot)
             return
         }
@@ -712,6 +988,24 @@ class TBTimer: ObservableObject {
             } else {
                 stateMachine <- (.rest, snapshot)
             }
+        case .workPaused:
+            timerMode = .pomodoro
+            UserDefaults.standard.set(timerMode.rawValue, forKey: Self.timerModeKey)
+            resetStopwatch(publish: false, record: false)
+            if stateMachine.state == .pausedWork {
+                configurePausedWork(from: snapshot)
+            } else {
+                stateMachine <- (.pausedWork, snapshot)
+            }
+        case .restPaused:
+            timerMode = .pomodoro
+            UserDefaults.standard.set(timerMode.rawValue, forKey: Self.timerModeKey)
+            resetStopwatch(publish: false, record: false)
+            if stateMachine.state == .pausedRest {
+                configurePausedRest(from: snapshot)
+            } else {
+                stateMachine <- (.pausedRest, snapshot)
+            }
         case .stopwatchRunning, .stopwatchPaused:
             if stateMachine.state != .idle {
                 stateMachine <- (.idle, snapshot)
@@ -721,14 +1015,26 @@ class TBTimer: ObservableObject {
     }
 
     private func configureWork(from snapshot: TBActiveTimerSnapshot) {
+        completedWorkSets = max(snapshot.completedWorkSets ?? 0, 0)
         let startedAt = snapshot.startedAt ?? Date()
         let expectedEndAt = snapshot.expectedEndAt ?? startedAt.addingTimeInterval(TimeInterval(workIntervalLength * 60))
+        let storedElapsedSeconds = max(0, snapshot.elapsedSeconds ?? Int(Date().timeIntervalSince(startedAt)))
+        let remainingSeconds = max(0, Int(expectedEndAt.timeIntervalSince(Date())))
+        let plannedDurationSeconds = max(workIntervalLength * 60, storedElapsedSeconds + remainingSeconds, 1)
+        let elapsedSinceSnapshot = max(0, Int(Date().timeIntervalSince(snapshot.updatedAt)))
+        let accumulatedFocusSeconds = min(
+            plannedDurationSeconds,
+            storedElapsedSeconds + elapsedSinceSnapshot
+        )
         configureWork(
             sessionID: snapshot.sessionID ?? UUID(),
             startedAt: startedAt,
             expectedEndAt: expectedEndAt,
             focusIndexInSet: max(snapshot.focusIndexInSet, 1),
-            workIntervalsInSet: max(snapshot.workIntervalsInSet, 1)
+            workIntervalsInSet: max(snapshot.workIntervalsInSet, 1),
+            plannedDurationSeconds: plannedDurationSeconds,
+            accumulatedFocusSeconds: accumulatedFocusSeconds,
+            runningStartedAt: Date()
         )
     }
 
@@ -736,28 +1042,66 @@ class TBTimer: ObservableObject {
                                startedAt: Date,
                                expectedEndAt: Date,
                                focusIndexInSet: Int,
-                               workIntervalsInSet: Int) {
+                               workIntervalsInSet: Int,
+                               plannedDurationSeconds: Int? = nil,
+                               accumulatedFocusSeconds: Int = 0,
+                               runningStartedAt: Date? = Date()) {
         activeRestKind = nil
         consecutiveWorkIntervals = max(0, min(focusIndexInSet - 1, workIntervalsInSet - 1))
+        let plannedDurationSeconds = plannedDurationSeconds ?? max(1, Int(expectedEndAt.timeIntervalSince(startedAt)))
         activeFocusSession = TBActiveFocusSession(
             id: sessionID,
             startedAt: startedAt,
             focusIndexInSet: focusIndexInSet,
             workIntervalsInSet: workIntervalsInSet,
-            plannedDurationSeconds: max(1, Int(expectedEndAt.timeIntervalSince(startedAt)))
+            plannedDurationSeconds: plannedDurationSeconds,
+            accumulatedFocusSeconds: min(max(accumulatedFocusSeconds, 0), plannedDurationSeconds),
+            runningStartedAt: runningStartedAt
         )
         TBStatusItem.shared.setIcon(name: .work)
         startTimer(until: expectedEndAt)
         player.startTicking()
     }
 
+    private func configurePausedWork(from snapshot: TBActiveTimerSnapshot) {
+        completedWorkSets = max(snapshot.completedWorkSets ?? 0, 0)
+        let plannedDurationSeconds = max(workIntervalLength * 60, 1)
+        let elapsedSeconds = min(max(snapshot.elapsedSeconds ?? 0, 0), plannedDurationSeconds)
+        activeRestKind = nil
+        consecutiveWorkIntervals = max(0, min(snapshot.focusIndexInSet - 1, max(snapshot.workIntervalsInSet, 1) - 1))
+        activeFocusSession = TBActiveFocusSession(
+            id: snapshot.sessionID ?? UUID(),
+            startedAt: snapshot.startedAt ?? Date(),
+            focusIndexInSet: max(snapshot.focusIndexInSet, 1),
+            workIntervalsInSet: max(snapshot.workIntervalsInSet, 1),
+            plannedDurationSeconds: plannedDurationSeconds,
+            accumulatedFocusSeconds: elapsedSeconds,
+            runningStartedAt: nil
+        )
+        pausedPomodoroRemainingSeconds = max(0, plannedDurationSeconds - elapsedSeconds)
+        timeLeftString = timerFormatter.string(from: TimeInterval(pausedPomodoroRemainingSeconds ?? 0)) ?? "00:00"
+        stopTimer()
+        TBStatusItem.shared.setIcon(name: .idle)
+    }
+
     private func configureRest(from snapshot: TBActiveTimerSnapshot) {
+        completedWorkSets = max(snapshot.completedWorkSets ?? 0, 0)
         let startedAt = snapshot.startedAt ?? Date()
         let expectedEndAt = snapshot.expectedEndAt ?? startedAt.addingTimeInterval(TimeInterval(shortRestIntervalLength * 60))
         activeRestKind = snapshot.restKind ?? .short
         consecutiveWorkIntervals = min(max(snapshot.focusIndexInSet, 0), max(snapshot.workIntervalsInSet, 1))
         TBStatusItem.shared.setIcon(name: activeRestKind == .long ? .longRest : .shortRest)
         startTimer(until: expectedEndAt)
+    }
+
+    private func configurePausedRest(from snapshot: TBActiveTimerSnapshot) {
+        completedWorkSets = max(snapshot.completedWorkSets ?? 0, 0)
+        activeRestKind = snapshot.restKind ?? .short
+        consecutiveWorkIntervals = min(max(snapshot.focusIndexInSet, 0), max(snapshot.workIntervalsInSet, 1))
+        pausedPomodoroRemainingSeconds = max(0, snapshot.elapsedSeconds ?? 0)
+        timeLeftString = timerFormatter.string(from: TimeInterval(pausedPomodoroRemainingSeconds ?? 0)) ?? "00:00"
+        stopTimer()
+        TBStatusItem.shared.setIcon(name: .idle)
     }
 
     private func configureStopwatch(from snapshot: TBActiveTimerSnapshot) {
