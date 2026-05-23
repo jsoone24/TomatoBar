@@ -84,14 +84,10 @@ class TBFocusHistoryStore: ObservableObject {
     private let calendar: Calendar
     private let encoder = JSONEncoder()
     private let decoder = JSONDecoder()
-    private let syncStore: TBCloudKitSyncStore
-    private var cancellables: Set<AnyCancellable> = []
 
     init(fileManager: FileManager = .default,
-         calendar: Calendar = .current,
-         syncStore: TBCloudKitSyncStore = .shared) {
+         calendar: Calendar = .current) {
         self.calendar = calendar
-        self.syncStore = syncStore
         encoder.dateEncodingStrategy = .iso8601
         decoder.dateDecodingStrategy = .iso8601
 
@@ -100,7 +96,6 @@ class TBFocusHistoryStore: ObservableObject {
             .appendingPathComponent("FocusSessions.jsonl")
 
         load()
-        bindSync()
     }
 
     func record(id: UUID = UUID(),
@@ -126,7 +121,7 @@ class TBFocusHistoryStore: ObservableObject {
             workIntervalsInSet: workIntervalsInSet,
             plannedDurationSeconds: plannedDurationSeconds
         )
-        save(session, sync: true)
+        save(session)
     }
 
     func recordStopwatch(id: UUID = UUID(),
@@ -150,7 +145,7 @@ class TBFocusHistoryStore: ObservableObject {
             plannedDurationSeconds: duration,
             mode: .stopwatch
         )
-        save(session, sync: true)
+        save(session)
     }
 
     func totalFocusTime(on date: Date = Date()) -> Int {
@@ -224,7 +219,7 @@ class TBFocusHistoryStore: ObservableObject {
         }
     }
 
-    private func save(_ session: TBFocusSession, sync: Bool) {
+    private func save(_ session: TBFocusSession) {
         let updatesExistingSession = sessions.contains { $0.id == session.id }
         guard upsert(session) else {
             return
@@ -236,19 +231,6 @@ class TBFocusHistoryStore: ObservableObject {
         } else if !append(session) {
             return
         }
-
-        if sync {
-            syncStore.save(focusSession: session)
-        }
-    }
-
-    private func merge(_ remoteSessions: [TBFocusSession]) {
-        guard remoteSessions.reduce(false, { upsert($1) || $0 }) else {
-            return
-        }
-
-        sortSessions()
-        persist()
     }
 
     private func upsert(_ session: TBFocusSession) -> Bool {
@@ -275,15 +257,6 @@ class TBFocusHistoryStore: ObservableObject {
         } catch {
             print("cannot write focus sessions: \(error)")
         }
-    }
-
-    private func bindSync() {
-        syncStore.focusSessions
-            .receive(on: DispatchQueue.main)
-            .sink { [weak self] sessions in
-                self?.merge(sessions)
-            }
-            .store(in: &cancellables)
     }
 
     private func sortSessions() {

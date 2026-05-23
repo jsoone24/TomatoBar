@@ -9,7 +9,6 @@ private struct TBActiveFocusSession {
     let focusIndexInSet: Int
     let workIntervalsInSet: Int
     let plannedDurationSeconds: Int
-    let startedFromRemote: Bool
 }
 
 class TBTimer: ObservableObject {
@@ -35,8 +34,6 @@ class TBTimer: ObservableObject {
     @Published private(set) var stopwatchRestElapsedString = "00:00"
     private var activeFocusSession: TBActiveFocusSession?
     private var activeTimerRevision: Int = 0
-    private var isFollowingRemoteTimer = false
-    private var cancellables: Set<AnyCancellable> = []
     private var notificationCenter = TBNotificationCenter()
     private var finishTime: Date?
     private var stopwatchSessionID: UUID?
@@ -202,7 +199,6 @@ class TBTimer: ObservableObject {
         timerFormatter.zeroFormattingBehavior = .pad
 
         activeTimerRevision = activeTimerStore.snapshot?.revision ?? 0
-        bindActiveTimerSync()
         resumeActiveTimerIfNeeded()
 
         KeyboardShortcuts.onKeyUp(for: .startStopTimer, action: startStop)
@@ -433,10 +429,6 @@ class TBTimer: ObservableObject {
             }
             let timeLeft = finishTime.timeIntervalSince(Date())
             if timeLeft <= 0 {
-                if isFollowingRemoteTimer {
-                    stopTimer()
-                    return
-                }
                 /*
                  Ticks can be missed during the machine sleep.
                  Stop the timer if it goes beyond an overrun time limit.
@@ -524,8 +516,7 @@ class TBTimer: ObservableObject {
             startedAt: startedAt,
             expectedEndAt: expectedEndAt,
             focusIndexInSet: focusIndexInSet,
-            workIntervalsInSet: safeWorkIntervalsInSet,
-            startedFromRemote: false
+            workIntervalsInSet: safeWorkIntervalsInSet
         )
         player.playWindup()
         publishActiveTimer(
@@ -541,12 +532,9 @@ class TBTimer: ObservableObject {
         guard snapshot(from: ctx) == nil else {
             return
         }
-        let suppressSound = activeFocusSession?.startedFromRemote == true
         finishActiveFocusSession(completed: true)
         consecutiveWorkIntervals += 1
-        if !suppressSound {
-            player.playDing()
-        }
+        player.playDing()
     }
 
     private func onWorkEnd(context ctx: TBStateMachine.Context) {
@@ -616,7 +604,6 @@ class TBTimer: ObservableObject {
         TBStatusItem.shared.setIcon(name: .idle)
         activeRestKind = nil
         activeFocusSession = nil
-        isFollowingRemoteTimer = false
         consecutiveWorkIntervals = 0
         if snapshot(from: ctx) == nil {
             publishActiveTimer(phase: .idle, startedAt: nil, expectedEndAt: nil)
@@ -660,8 +647,7 @@ class TBTimer: ObservableObject {
             restKind: restKind,
             revision: activeTimerRevision,
             updatedAt: Date(),
-            sessionID: sessionID,
-            sourceDeviceID: TBDeviceIdentity.current
+            sessionID: sessionID
         ))
     }
 
@@ -677,21 +663,10 @@ class TBTimer: ObservableObject {
             revision: activeTimerRevision,
             updatedAt: Date(),
             sessionID: stopwatchSessionID,
-            sourceDeviceID: TBDeviceIdentity.current,
             elapsedSeconds: stopwatchAccumulatedSeconds,
             runningStartedAt: stopwatchRunningStartedAt,
             pausedAt: stopwatchPausedAt
         ))
-    }
-
-    private func bindActiveTimerSync() {
-        activeTimerStore.$snapshot
-            .compactMap { $0 }
-            .receive(on: DispatchQueue.main)
-            .sink { [weak self] snapshot in
-                self?.applyRemoteActiveTimerSnapshot(snapshot)
-            }
-            .store(in: &cancellables)
     }
 
     private func resumeActiveTimerIfNeeded() {
@@ -707,13 +682,6 @@ class TBTimer: ObservableObject {
             return
         }
 
-        applyActiveTimerSnapshot(snapshot)
-    }
-
-    private func applyRemoteActiveTimerSnapshot(_ snapshot: TBActiveTimerSnapshot) {
-        guard snapshot.sourceDeviceID != TBDeviceIdentity.current else {
-            return
-        }
         applyActiveTimerSnapshot(snapshot)
     }
 
@@ -760,8 +728,7 @@ class TBTimer: ObservableObject {
             startedAt: startedAt,
             expectedEndAt: expectedEndAt,
             focusIndexInSet: max(snapshot.focusIndexInSet, 1),
-            workIntervalsInSet: max(snapshot.workIntervalsInSet, 1),
-            startedFromRemote: snapshot.sourceDeviceID != TBDeviceIdentity.current
+            workIntervalsInSet: max(snapshot.workIntervalsInSet, 1)
         )
     }
 
@@ -769,31 +736,25 @@ class TBTimer: ObservableObject {
                                startedAt: Date,
                                expectedEndAt: Date,
                                focusIndexInSet: Int,
-                               workIntervalsInSet: Int,
-                               startedFromRemote: Bool) {
+                               workIntervalsInSet: Int) {
         activeRestKind = nil
         consecutiveWorkIntervals = max(0, min(focusIndexInSet - 1, workIntervalsInSet - 1))
-        isFollowingRemoteTimer = startedFromRemote
         activeFocusSession = TBActiveFocusSession(
             id: sessionID,
             startedAt: startedAt,
             focusIndexInSet: focusIndexInSet,
             workIntervalsInSet: workIntervalsInSet,
-            plannedDurationSeconds: max(1, Int(expectedEndAt.timeIntervalSince(startedAt))),
-            startedFromRemote: startedFromRemote
+            plannedDurationSeconds: max(1, Int(expectedEndAt.timeIntervalSince(startedAt)))
         )
         TBStatusItem.shared.setIcon(name: .work)
         startTimer(until: expectedEndAt)
-        if !startedFromRemote {
-            player.startTicking()
-        }
+        player.startTicking()
     }
 
     private func configureRest(from snapshot: TBActiveTimerSnapshot) {
         let startedAt = snapshot.startedAt ?? Date()
         let expectedEndAt = snapshot.expectedEndAt ?? startedAt.addingTimeInterval(TimeInterval(shortRestIntervalLength * 60))
         activeRestKind = snapshot.restKind ?? .short
-        isFollowingRemoteTimer = snapshot.sourceDeviceID != TBDeviceIdentity.current
         consecutiveWorkIntervals = min(max(snapshot.focusIndexInSet, 0), max(snapshot.workIntervalsInSet, 1))
         TBStatusItem.shared.setIcon(name: activeRestKind == .long ? .longRest : .shortRest)
         startTimer(until: expectedEndAt)

@@ -33,7 +33,6 @@ struct TBActiveTimerSnapshot: Codable, Equatable {
     let revision: Int
     let updatedAt: Date
     let sessionID: UUID?
-    let sourceDeviceID: String?
     let elapsedSeconds: Int?
     let runningStartedAt: Date?
     let pausedAt: Date?
@@ -47,7 +46,6 @@ struct TBActiveTimerSnapshot: Codable, Equatable {
          revision: Int,
          updatedAt: Date,
          sessionID: UUID?,
-         sourceDeviceID: String?,
          elapsedSeconds: Int? = nil,
          runningStartedAt: Date? = nil,
          pausedAt: Date? = nil) {
@@ -60,7 +58,6 @@ struct TBActiveTimerSnapshot: Codable, Equatable {
         self.revision = revision
         self.updatedAt = updatedAt
         self.sessionID = sessionID
-        self.sourceDeviceID = sourceDeviceID
         self.elapsedSeconds = elapsedSeconds
         self.runningStartedAt = runningStartedAt
         self.pausedAt = pausedAt
@@ -73,12 +70,8 @@ class TBActiveTimerStore: ObservableObject {
     private let fileURL: URL
     private let encoder = JSONEncoder()
     private let decoder = JSONDecoder()
-    private let syncStore: TBCloudKitSyncStore
-    private var cancellables: Set<AnyCancellable> = []
 
-    init(fileManager: FileManager = .default,
-         syncStore: TBCloudKitSyncStore = .shared) {
-        self.syncStore = syncStore
+    init(fileManager: FileManager = .default) {
         encoder.dateEncodingStrategy = .iso8601
         decoder.dateDecodingStrategy = .iso8601
 
@@ -87,17 +80,13 @@ class TBActiveTimerStore: ObservableObject {
             .appendingPathComponent("ActiveTimer.json")
 
         load()
-        bindSync()
     }
 
-    func save(_ snapshot: TBActiveTimerSnapshot, sync: Bool = true) {
+    func save(_ snapshot: TBActiveTimerSnapshot) {
         do {
             let data = try encoder.encode(snapshot)
             try data.write(to: fileURL, options: .atomic)
             self.snapshot = snapshot
-            if sync {
-                syncStore.save(activeTimer: snapshot)
-            }
         } catch {
             print("cannot write active timer snapshot: \(error)")
         }
@@ -110,28 +99,5 @@ class TBActiveTimerStore: ObservableObject {
         }
 
         snapshot = try? decoder.decode(TBActiveTimerSnapshot.self, from: data)
-    }
-
-    private func bindSync() {
-        syncStore.activeTimerSnapshots
-            .receive(on: DispatchQueue.main)
-            .sink { [weak self] snapshot in
-                guard let self = self,
-                      self.shouldAccept(snapshot) else {
-                    return
-                }
-                self.save(snapshot, sync: false)
-            }
-            .store(in: &cancellables)
-    }
-
-    private func shouldAccept(_ incoming: TBActiveTimerSnapshot) -> Bool {
-        guard let current = snapshot else {
-            return true
-        }
-        if incoming.revision != current.revision {
-            return incoming.revision > current.revision
-        }
-        return incoming.updatedAt > current.updatedAt
     }
 }

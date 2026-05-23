@@ -19,29 +19,14 @@
 		8AA5B3EB281295DB00BE1A6C /* KeyboardShortcuts in Frameworks */ = {isa = PBXBuildFile; productRef = 8AA5B3EA281295DB00BE1A6C /* KeyboardShortcuts */; };
 		8AA5B3F22812A74600BE1A6C /* Notifications.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8AA5B3F12812A74600BE1A6C /* Notifications.swift */; };
 		8AEE49AF2AA75A5E00243D2F /* Log.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8AEE49AE2AA75A5E00243D2F /* Log.swift */; };
-		00422BE2B1184DC4BC507DDA /* SharedTimerController.swift in Sources */ = {isa = PBXBuildFile; fileRef = B9A1A0A8999448B6BA6BA123 /* SharedTimerController.swift */; };
-		F8C2446D72D2438D9D90F5E3 /* SharedTimerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7877E3B7ED1349758231004C /* SharedTimerView.swift */; };
-		8A07997DF746419180F558FD /* CloudSync.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF8104F0B4534E79B8AA9151 /* CloudSync.swift */; };
-		CF3B88884F3A426094E57EBA /* MobileApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = CBB8113053C54A61BC032EB9 /* MobileApp.swift */; };
-		1FDB7B3C65F44749AEF3C152 /* ActiveTimer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 46E2FA0EBF544F9C8B08BF37 /* ActiveTimer.swift */; };
-		D40B89BCF4F84CEE94144783 /* CloudSync.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF8104F0B4534E79B8AA9151 /* CloudSync.swift */; };
-		6402E5EFBA7D4E80AA516FD4 /* FocusHistory.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA9B3EB845ED45FC8A79DC99 /* FocusHistory.swift */; };
-		24CFCE5CB6474C61912BE6E5 /* SharedTimerController.swift in Sources */ = {isa = PBXBuildFile; fileRef = B9A1A0A8999448B6BA6BA123 /* SharedTimerController.swift */; };
-		D73F773094B84A81A0E0FD5E /* SharedTimerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7877E3B7ED1349758231004C /* SharedTimerView.swift */; };
-		C87B779AE9C0F32590CEAA2C /* WatchApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = CDA8901ACBC3592F15B14D9F /* WatchApp.swift */; };
-		D8672081F5A680ABA6C03171 /* ActiveTimer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 46E2FA0EBF544F9C8B08BF37 /* ActiveTimer.swift */; };
-		8CA16BCE8D6FEB0622E9A633 /* CloudSync.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF8104F0B4534E79B8AA9151 /* CloudSync.swift */; };
-		64E2A4BB098465879F2933C3 /* FocusHistory.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA9B3EB845ED45FC8A79DC99 /* FocusHistory.swift */; };
-		36CB3F35A552927EA5A5E4BC /* SharedTimerController.swift in Sources */ = {isa = PBXBuildFile; fileRef = B9A1A0A8999448B6BA6BA123 /* SharedTimerController.swift */; };
-		752EF8B76C099F2821C73E4A /* SharedTimerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7877E3B7ED1349758231004C /* SharedTimerView.swift */; };
 		D2DD7A9A9A82409582B8B04A /* ActiveTimer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 46E2FA0EBF544F9C8B08BF37 /* ActiveTimer.swift */; };
 		F7137F6A65FB499EACFC7019 /* FocusHistory.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA9B3EB845ED45FC8A79DC99 /* FocusHistory.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		46E2FA0EBF544F9C8B08BF37 /* ActiveTimer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActiveTimer.swift; sourceTree = "<group>"; };
+		4CC11A472B6A28500012E8EC /* ko */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = ko; path = ko.lproj/Localizable.strings; sourceTree = "<group>"; };
 		8A21B78827EE31A20009E5DB /* TomatoBar.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = TomatoBar.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		C49FA28203A6468D96D0682D /* TomatoBarMobile.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = TomatoBarMobile.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		48876BE97D730C53C152A3AE /* TomatoBarWatch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = TomatoBarWatch.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		8A21B78B27EE31A20009E5DB /* App.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = App.swift; sourceTree = "<group>"; };
 		8A21B78D27EE31A20009E5DB /* View.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = View.swift; sourceTree = "<group>"; };
 		8A21B78F27EE31A30009E5DB /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
@@ -53,18 +38,7 @@
 		8AA5B3F12812A74600BE1A6C /* Notifications.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Notifications.swift; sourceTree = "<group>"; };
 		8AEE49AE2AA75A5E00243D2F /* Log.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Log.swift; sourceTree = "<group>"; };
 		C4C8DE0E2930DBB4003B1110 /* zh-Hans */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "zh-Hans"; path = "zh-Hans.lproj/Localizable.strings"; sourceTree = "<group>"; };
-		4CC11A472B6A28500012E8EC /* ko */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = ko; path = ko.lproj/Localizable.strings; sourceTree = "<group>"; };
-		46E2FA0EBF544F9C8B08BF37 /* ActiveTimer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActiveTimer.swift; sourceTree = "<group>"; };
 		DA9B3EB845ED45FC8A79DC99 /* FocusHistory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FocusHistory.swift; sourceTree = "<group>"; };
-		DF8104F0B4534E79B8AA9151 /* CloudSync.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CloudSync.swift; sourceTree = "<group>"; };
-		B9A1A0A8999448B6BA6BA123 /* SharedTimerController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedTimerController.swift; sourceTree = "<group>"; };
-		7877E3B7ED1349758231004C /* SharedTimerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedTimerView.swift; sourceTree = "<group>"; };
-		CBB8113053C54A61BC032EB9 /* MobileApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MobileApp.swift; sourceTree = "<group>"; };
-		2578347D08B27D7357594719 /* MobileInfo.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = MobileInfo.plist; sourceTree = "<group>"; };
-		520402B493D74147A71A34EA /* TomatoBarMobile.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = TomatoBarMobile.entitlements; sourceTree = "<group>"; };
-		CDA8901ACBC3592F15B14D9F /* WatchApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchApp.swift; sourceTree = "<group>"; };
-		2B3F74E32263659FB7B6C13B /* WatchInfo.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = WatchInfo.plist; sourceTree = "<group>"; };
-		880B1B8118574145DD9DD173 /* TomatoBarWatch.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = TomatoBarWatch.entitlements; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -75,20 +49,6 @@
 				8A7403A027FA19BB00E7F90B /* LaunchAtLogin in Frameworks */,
 				8AA5B3EB281295DB00BE1A6C /* KeyboardShortcuts in Frameworks */,
 				8A8CFE402821D8C300F9F303 /* SwiftState in Frameworks */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		4341CF89063E4344B672BB35 /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		CAE02201226598EC1DBB76F3 /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -108,8 +68,6 @@
 			isa = PBXGroup;
 			children = (
 				8A21B78827EE31A20009E5DB /* TomatoBar.app */,
-				C49FA28203A6468D96D0682D /* TomatoBarMobile.app */,
-				48876BE97D730C53C152A3AE /* TomatoBarWatch.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -119,24 +77,15 @@
 			children = (
 				46E2FA0EBF544F9C8B08BF37 /* ActiveTimer.swift */,
 				8A21B78B27EE31A20009E5DB /* App.swift */,
-				DF8104F0B4534E79B8AA9151 /* CloudSync.swift */,
 				DA9B3EB845ED45FC8A79DC99 /* FocusHistory.swift */,
 				8AEE49AE2AA75A5E00243D2F /* Log.swift */,
-				CBB8113053C54A61BC032EB9 /* MobileApp.swift */,
-				2578347D08B27D7357594719 /* MobileInfo.plist */,
-				CDA8901ACBC3592F15B14D9F /* WatchApp.swift */,
-				2B3F74E32263659FB7B6C13B /* WatchInfo.plist */,
 				8A21B78D27EE31A20009E5DB /* View.swift */,
 				8A9F700827EE396E0012A1EC /* State.swift */,
-				B9A1A0A8999448B6BA6BA123 /* SharedTimerController.swift */,
-				7877E3B7ED1349758231004C /* SharedTimerView.swift */,
 				8A9F701827EE3DAF0012A1EC /* Timer.swift */,
 				8A9F701E27EE536D0012A1EC /* Player.swift */,
 				8AA5B3F12812A74600BE1A6C /* Notifications.swift */,
 				8A21B78F27EE31A30009E5DB /* Assets.xcassets */,
 				8A21B79427EE31A30009E5DB /* TomatoBar.entitlements */,
-				520402B493D74147A71A34EA /* TomatoBarMobile.entitlements */,
-				880B1B8118574145DD9DD173 /* TomatoBarWatch.entitlements */,
 				8AA54347293094AB002A47FC /* Localizable.strings */,
 			);
 			path = TomatoBar;
@@ -175,44 +124,6 @@
 			productReference = 8A21B78827EE31A20009E5DB /* TomatoBar.app */;
 			productType = "com.apple.product-type.application";
 		};
-		7B3D5E5915F948F89C9F99F2 /* TomatoBarMobile */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = 052E8CE68A4346539527D7BF /* Build configuration list for PBXNativeTarget "TomatoBarMobile" */;
-			buildPhases = (
-				A33B073283A647148FB17AE3 /* Sources */,
-				4341CF89063E4344B672BB35 /* Frameworks */,
-				A2813F421BB449F79AC6BF7B /* Resources */,
-			);
-			buildRules = (
-			);
-			dependencies = (
-			);
-			name = TomatoBarMobile;
-			packageProductDependencies = (
-			);
-			productName = TomatoBarMobile;
-			productReference = C49FA28203A6468D96D0682D /* TomatoBarMobile.app */;
-			productType = "com.apple.product-type.application";
-		};
-		B4F57230EF4640B48653542B /* TomatoBarWatch */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = 3D3F12527670F5EE238E200B /* Build configuration list for PBXNativeTarget "TomatoBarWatch" */;
-			buildPhases = (
-				98CB3C5727F8F08F02F6E7FD /* Sources */,
-				CAE02201226598EC1DBB76F3 /* Frameworks */,
-				B76446F85E1628FA02F09B3A /* Resources */,
-			);
-			buildRules = (
-			);
-			dependencies = (
-			);
-			name = TomatoBarWatch;
-			packageProductDependencies = (
-			);
-			productName = TomatoBarWatch;
-			productReference = 48876BE97D730C53C152A3AE /* TomatoBarWatch.app */;
-			productType = "com.apple.product-type.application";
-		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -225,12 +136,6 @@
 				TargetAttributes = {
 					8A21B78727EE31A20009E5DB = {
 						CreatedOnToolsVersion = 13.3;
-					};
-					7B3D5E5915F948F89C9F99F2 = {
-						CreatedOnToolsVersion = 17.0;
-					};
-					B4F57230EF4640B48653542B = {
-						CreatedOnToolsVersion = 17.0;
 					};
 				};
 			};
@@ -255,8 +160,6 @@
 			projectRoot = "";
 			targets = (
 				8A21B78727EE31A20009E5DB /* TomatoBar */,
-				7B3D5E5915F948F89C9F99F2 /* TomatoBarMobile */,
-				B4F57230EF4640B48653542B /* TomatoBarWatch */,
 			);
 		};
 /* End PBXProject section */
@@ -268,20 +171,6 @@
 			files = (
 				8A21B79027EE31A30009E5DB /* Assets.xcassets in Resources */,
 				8AA5434A2930F008002A47FC /* Localizable.strings in Resources */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		A2813F421BB449F79AC6BF7B /* Resources */ = {
-			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		B76446F85E1628FA02F09B3A /* Resources */ = {
-			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -321,37 +210,8 @@
 				8A21B78C27EE31A20009E5DB /* App.swift in Sources */,
 				8AA5B3F22812A74600BE1A6C /* Notifications.swift in Sources */,
 				8A9F700927EE396E0012A1EC /* State.swift in Sources */,
-				00422BE2B1184DC4BC507DDA /* SharedTimerController.swift in Sources */,
-				F8C2446D72D2438D9D90F5E3 /* SharedTimerView.swift in Sources */,
-				8A07997DF746419180F558FD /* CloudSync.swift in Sources */,
 				D2DD7A9A9A82409582B8B04A /* ActiveTimer.swift in Sources */,
 				F7137F6A65FB499EACFC7019 /* FocusHistory.swift in Sources */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		A33B073283A647148FB17AE3 /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				CF3B88884F3A426094E57EBA /* MobileApp.swift in Sources */,
-				1FDB7B3C65F44749AEF3C152 /* ActiveTimer.swift in Sources */,
-				D40B89BCF4F84CEE94144783 /* CloudSync.swift in Sources */,
-				6402E5EFBA7D4E80AA516FD4 /* FocusHistory.swift in Sources */,
-				24CFCE5CB6474C61912BE6E5 /* SharedTimerController.swift in Sources */,
-				D73F773094B84A81A0E0FD5E /* SharedTimerView.swift in Sources */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		98CB3C5727F8F08F02F6E7FD /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				C87B779AE9C0F32590CEAA2C /* WatchApp.swift in Sources */,
-				D8672081F5A680ABA6C03171 /* ActiveTimer.swift in Sources */,
-				8CA16BCE8D6FEB0622E9A633 /* CloudSync.swift in Sources */,
-				64E2A4BB098465879F2933C3 /* FocusHistory.swift in Sources */,
-				36CB3F35A552927EA5A5E4BC /* SharedTimerController.swift in Sources */,
-				752EF8B76C099F2821C73E4A /* SharedTimerView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -495,11 +355,10 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = TomatoBar/TomatoBar.entitlements;
 				CODE_SIGN_IDENTITY = "-";
-				CODE_SIGN_STYLE = Automatic;
+				CODE_SIGN_STYLE = Manual;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
 				DEAD_CODE_STRIPPING = YES;
-				DEVELOPMENT_TEAM = "";
 				ENABLE_HARDENED_RUNTIME = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = TomatoBar/Info.plist;
@@ -512,7 +371,7 @@
 				);
 				MACOSX_DEPLOYMENT_TARGET = 11.0;
 				MARKETING_VERSION = 3.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.github.ivoronin.TomatoBar;
+				PRODUCT_BUNDLE_IDENTIFIER = com.jsoone24.TomatoBar;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
@@ -530,11 +389,10 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = TomatoBar/TomatoBar.entitlements;
 				CODE_SIGN_IDENTITY = "-";
-				CODE_SIGN_STYLE = Automatic;
+				CODE_SIGN_STYLE = Manual;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
 				DEAD_CODE_STRIPPING = YES;
-				DEVELOPMENT_TEAM = "";
 				ENABLE_HARDENED_RUNTIME = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = TomatoBar/Info.plist;
@@ -547,7 +405,7 @@
 				);
 				MACOSX_DEPLOYMENT_TARGET = 11.0;
 				MARKETING_VERSION = 3.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.github.ivoronin.TomatoBar;
+				PRODUCT_BUNDLE_IDENTIFIER = com.jsoone24.TomatoBar;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
@@ -555,114 +413,6 @@
 					"$(inherited)",
 					"$(SYSTEM_LIBRARY_DIR)/PrivateFrameworks",
 				);
-			};
-			name = Release;
-		};
-		7DE00959F45C4F2D96555132 /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				CODE_SIGN_ENTITLEMENTS = TomatoBar/TomatoBarMobile.entitlements;
-				CODE_SIGN_IDENTITY = "Apple Development";
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = "";
-				GENERATE_INFOPLIST_FILE = NO;
-				INFOPLIST_FILE = TomatoBar/MobileInfo.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = TomatoBar;
-				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
-				INFOPLIST_KEY_UIBackgroundModes = "remote-notification";
-				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
-				MARKETING_VERSION = 3.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.github.ivoronin.TomatoBar;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SDKROOT = iphoneos;
-				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
-				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
-			};
-			name = Debug;
-		};
-		034BE532E76A474596D3001A /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				CODE_SIGN_ENTITLEMENTS = TomatoBar/TomatoBarMobile.entitlements;
-				CODE_SIGN_IDENTITY = "Apple Development";
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = "";
-				GENERATE_INFOPLIST_FILE = NO;
-				INFOPLIST_FILE = TomatoBar/MobileInfo.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = TomatoBar;
-				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
-				INFOPLIST_KEY_UIBackgroundModes = "remote-notification";
-				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
-				MARKETING_VERSION = 3.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.github.ivoronin.TomatoBar;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SDKROOT = iphoneos;
-				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
-				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
-				VALIDATE_PRODUCT = YES;
-			};
-			name = Release;
-		};
-		C0059FA7FA7A50E33F4DD196 /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				CODE_SIGN_ENTITLEMENTS = TomatoBar/TomatoBarWatch.entitlements;
-				CODE_SIGN_IDENTITY = "Apple Development";
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = "";
-				GENERATE_INFOPLIST_FILE = NO;
-				INFOPLIST_FILE = TomatoBar/WatchInfo.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = TomatoBar;
-				INFOPLIST_KEY_UIBackgroundModes = "remote-notification";
-				MARKETING_VERSION = 3.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.github.ivoronin.TomatoBar.watchkitapp;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SDKROOT = watchos;
-				SKIP_INSTALL = YES;
-				SUPPORTED_PLATFORMS = "watchos watchsimulator";
-				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = 4;
-				WATCHOS_DEPLOYMENT_TARGET = 9.0;
-			};
-			name = Debug;
-		};
-		D9305983BB74631F211E2E6D /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				CODE_SIGN_ENTITLEMENTS = TomatoBar/TomatoBarWatch.entitlements;
-				CODE_SIGN_IDENTITY = "Apple Development";
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = "";
-				GENERATE_INFOPLIST_FILE = NO;
-				INFOPLIST_FILE = TomatoBar/WatchInfo.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = TomatoBar;
-				INFOPLIST_KEY_UIBackgroundModes = "remote-notification";
-				MARKETING_VERSION = 3.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.github.ivoronin.TomatoBar.watchkitapp;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SDKROOT = watchos;
-				SKIP_INSTALL = YES;
-				SUPPORTED_PLATFORMS = "watchos watchsimulator";
-				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = 4;
-				VALIDATE_PRODUCT = YES;
-				WATCHOS_DEPLOYMENT_TARGET = 9.0;
 			};
 			name = Release;
 		};
@@ -683,24 +433,6 @@
 			buildConfigurations = (
 				8A21B79827EE31A30009E5DB /* Debug */,
 				8A21B79927EE31A30009E5DB /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
-		052E8CE68A4346539527D7BF /* Build configuration list for PBXNativeTarget "TomatoBarMobile" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				7DE00959F45C4F2D96555132 /* Debug */,
-				034BE532E76A474596D3001A /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
-		3D3F12527670F5EE238E200B /* Build configuration list for PBXNativeTarget "TomatoBarWatch" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				C0059FA7FA7A50E33F4DD196 /* Debug */,
-				D9305983BB74631F211E2E6D /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
