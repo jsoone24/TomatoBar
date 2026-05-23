@@ -211,7 +211,14 @@ private struct TimerModePicker: View {
     private var modeBinding: Binding<TBTimerMode> {
         Binding(
             get: { timer.timerMode },
-            set: { timer.setTimerMode($0) }
+            set: { mode in
+                guard mode != timer.timerMode else {
+                    return
+                }
+                DispatchQueue.main.async {
+                    timer.setTimerMode(mode)
+                }
+            }
         )
     }
 }
