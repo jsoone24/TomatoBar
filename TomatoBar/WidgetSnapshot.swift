@@ -108,6 +108,22 @@ struct TBWidgetSnapshot: Codable, Equatable {
         }
     }
 
+    func nextTimelineRefreshDate(after date: Date = Date()) -> Date {
+        let regularRefreshDate = date.addingTimeInterval(15)
+
+        switch phase {
+        case .focus, .shortBreak, .longBreak:
+            guard let expectedEndAt, expectedEndAt > date else {
+                return date.addingTimeInterval(15)
+            }
+            return min(expectedEndAt, regularRefreshDate)
+        case .stopwatchRunning:
+            return regularRefreshDate
+        case .idle, .paused, .stopwatchPaused:
+            return regularRefreshDate
+        }
+    }
+
     func displayTodayFocusSeconds(at date: Date = Date(), calendar: Calendar = .current) -> Int {
         let safeStoredSeconds = max(todayFocusSeconds, 0)
         guard let liveFocusStartedAt,

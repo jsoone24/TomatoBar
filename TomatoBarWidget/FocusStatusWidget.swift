@@ -19,7 +19,7 @@ struct TBFocusWidgetProvider: TimelineProvider {
         let now = Date()
         let snapshot = TBWidgetSnapshotStore.load()
         let entry = TBFocusWidgetEntry(date: now, snapshot: snapshot)
-        completion(Timeline(entries: [entry], policy: .after(now.addingTimeInterval(60))))
+        completion(Timeline(entries: [entry], policy: .after(snapshot.nextTimelineRefreshDate(after: now))))
     }
 }
 
@@ -60,9 +60,8 @@ private struct FocusStatusWidgetView: View {
             Text(entry.snapshot.statusTitle)
                 .font(.headline)
                 .lineLimit(1)
-            Text(entry.snapshot.timeText(at: entry.date))
-                .font(.system(.title2, design: .rounded).monospacedDigit())
-                .fontWeight(.semibold)
+            timeText
+                .font(.system(.title2, design: .rounded).monospacedDigit().weight(.semibold))
                 .lineLimit(1)
             Spacer(minLength: 0)
             dailyProgressSummary
@@ -79,9 +78,8 @@ private struct FocusStatusWidgetView: View {
                 Text(entry.snapshot.statusTitle)
                     .font(.headline)
                     .lineLimit(1)
-                Text(entry.snapshot.timeText(at: entry.date))
-                    .font(.system(.title, design: .rounded).monospacedDigit())
-                    .fontWeight(.semibold)
+                timeText
+                    .font(.system(.title, design: .rounded).monospacedDigit().weight(.semibold))
                     .lineLimit(1)
                 Text(entry.snapshot.detailText)
                     .font(.caption)
@@ -135,6 +133,26 @@ private struct FocusStatusWidgetView: View {
         }
     }
 
+    @ViewBuilder
+    private var timeText: some View {
+        switch entry.snapshot.phase {
+        case .focus, .shortBreak, .longBreak:
+            if let expectedEndAt = entry.snapshot.expectedEndAt, expectedEndAt > entry.date {
+                Text(expectedEndAt, style: .timer)
+            } else {
+                Text(entry.snapshot.timeText(at: entry.date))
+            }
+        case .stopwatchRunning:
+            if let startedAt = entry.snapshot.liveFocusStartedAt {
+                Text(startedAt, style: .timer)
+            } else {
+                Text(entry.snapshot.timeText(at: entry.date))
+            }
+        case .idle, .paused, .stopwatchPaused:
+            Text(entry.snapshot.timeText(at: entry.date))
+        }
+    }
+
     private var periodStatsSummary: some View {
         VStack(alignment: .leading, spacing: 1) {
             Text(periodStatsCompactLine(
@@ -153,17 +171,11 @@ private struct FocusStatusWidgetView: View {
 
     private var dailyProgressSummary: some View {
         VStack(alignment: .leading, spacing: 5) {
-            HStack {
-                Text(todayFocusText)
-                    .font(.caption)
-                    .fontWeight(.semibold)
-                    .lineLimit(1)
-                Spacer(minLength: 4)
-                Text(progressText)
-                    .font(.caption2)
-                    .foregroundColor(.secondary)
-                    .lineLimit(1)
-            }
+            Text(goalSummaryText)
+                .font(.caption2)
+                .fontWeight(.semibold)
+                .lineLimit(1)
+                .minimumScaleFactor(0.75)
             goalProgressBar
         }
     }
@@ -232,13 +244,6 @@ private struct FocusStatusWidgetView: View {
 
     private var todayFocusText: String {
         TBFocusDurationFormatter.focusDurationString(currentTodayFocusSeconds)
-    }
-
-    private var progressText: String {
-        TBFocusDurationFormatter.goalProgressText(
-            durationSeconds: currentTodayFocusSeconds,
-            goalDurationSeconds: entry.snapshot.dailyGoalSeconds
-        )
     }
 
     private var goalSummaryText: String {
