@@ -66,6 +66,7 @@ private struct FocusStatusWidgetView: View {
                 .lineLimit(1)
             Spacer(minLength: 0)
             dailyProgressSummary
+            periodStatsSummary
         }
         .padding()
         .widgetURL(URL(string: "tomatobar://open"))
@@ -104,6 +105,16 @@ private struct FocusStatusWidgetView: View {
                     .font(.caption2)
                     .foregroundColor(.secondary)
                     .lineLimit(2)
+                VStack(alignment: .leading, spacing: 3) {
+                    periodStatsLine(
+                        title: NSLocalizedString("HistoryView.stats.week", comment: "Week stats label"),
+                        stats: currentWeekStats
+                    )
+                    periodStatsLine(
+                        title: NSLocalizedString("HistoryView.stats.month", comment: "Month stats label"),
+                        stats: currentMonthStats
+                    )
+                }
                 Spacer(minLength: 0)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -122,6 +133,22 @@ private struct FocusStatusWidgetView: View {
                 .foregroundColor(.secondary)
                 .lineLimit(1)
         }
+    }
+
+    private var periodStatsSummary: some View {
+        VStack(alignment: .leading, spacing: 1) {
+            Text(periodStatsCompactLine(
+                title: NSLocalizedString("HistoryView.stats.week", comment: "Week stats label"),
+                stats: currentWeekStats
+            ))
+            Text(periodStatsCompactLine(
+                title: NSLocalizedString("HistoryView.stats.month", comment: "Month stats label"),
+                stats: currentMonthStats
+            ))
+        }
+        .font(.caption2)
+        .foregroundColor(.secondary)
+        .lineLimit(1)
     }
 
     private var dailyProgressSummary: some View {
@@ -168,6 +195,26 @@ private struct FocusStatusWidgetView: View {
         .frame(height: 6)
     }
 
+    private func periodStatsLine(title: String, stats: TBFocusPeriodStats) -> some View {
+        HStack(spacing: 4) {
+            Text(title)
+                .foregroundColor(.secondary)
+            Text(TBFocusDurationFormatter.compactDurationString(stats.totalSeconds))
+                .fontWeight(.semibold)
+            Text("·")
+                .foregroundColor(.secondary)
+            Text("\(stats.goalDays)/\(stats.dayCount)")
+                .font(.system(.caption2).monospacedDigit())
+                .foregroundColor(.secondary)
+        }
+        .font(.caption2)
+        .lineLimit(1)
+    }
+
+    private func periodStatsCompactLine(title: String, stats: TBFocusPeriodStats) -> String {
+        "\(title) \(TBFocusDurationFormatter.compactDurationString(stats.totalSeconds)) · \(stats.goalDays)/\(stats.dayCount)"
+    }
+
     private var phaseColor: Color {
         switch entry.snapshot.phase {
         case .focus, .stopwatchRunning:
@@ -205,6 +252,14 @@ private struct FocusStatusWidgetView: View {
 
     private var currentTodayFocusSeconds: Int {
         entry.snapshot.displayTodayFocusSeconds(at: entry.date)
+    }
+
+    private var currentWeekStats: TBFocusPeriodStats {
+        entry.snapshot.displayWeekStats(at: entry.date)
+    }
+
+    private var currentMonthStats: TBFocusPeriodStats {
+        entry.snapshot.displayMonthStats(at: entry.date)
     }
 
     private var normalizedCurrentGoalProgress: Double {

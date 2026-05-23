@@ -62,6 +62,11 @@
 "HistoryView.dailyGoal.label" = "目标 %@";
 "HistoryView.goalProgress.percent" = "%d%%";
 "HistoryView.goalProgress.summary" = "%@ / %@ (%d%%)";
+"HistoryView.stats.total" = "总计";
+"HistoryView.stats.average" = "平均";
+"HistoryView.stats.goalDays" = "目标";
+"HistoryView.stats.week" = "周";
+"HistoryView.stats.month" = "月";
 "HistoryView.duration.seconds" = "%d 秒";
 "HistoryView.duration.minutes" = "%d 分";
 "HistoryView.duration.minutesSeconds" = "%d 分 %d 秒";

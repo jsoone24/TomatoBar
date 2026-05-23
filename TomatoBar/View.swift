@@ -829,6 +829,7 @@ private struct HistoryView: View {
         let selectedDuration = totalFocusTime(on: selectedDate)
         let periodStart = startOfPeriod(containing: visibleDate, range: range)
         let periodTotals = dailyTotals(from: periodStart, days: dayCount(inPeriodStarting: periodStart))
+        let periodStats = periodFocusStats(from: periodStart, totals: periodTotals)
         let goalDurationSeconds = dailyFocusGoalMinutes * 60
 
         VStack(alignment: .leading, spacing: 8) {
@@ -905,6 +906,8 @@ private struct HistoryView: View {
                 onSelectDate: selectDate
             )
 
+            HistoryPeriodStatsView(stats: periodStats)
+
             Divider()
 
             if selectedSessions.isEmpty {
@@ -951,6 +954,13 @@ private struct HistoryView: View {
                 durationSeconds: total.durationSeconds + timer.liveFocusDuration(on: total.date, calendar: calendar)
             )
         }
+    }
+
+    private func periodFocusStats(from periodStart: Date, totals: [TBDailyFocusTotal]) -> TBFocusPeriodStats {
+        let statsDayCount = elapsedDayCount(inPeriodStarting: periodStart)
+        let dailyDurations = totals.prefix(statsDayCount).map(\.durationSeconds)
+        return TBFocusPeriodStats(dailyDurations: dailyDurations,
+                                  goalDurationSeconds: max(dailyFocusGoalMinutes, 1) * 60)
     }
 
     private var historyActionsMenu: some View {
@@ -1037,6 +1047,24 @@ private struct HistoryView: View {
         return max(calendar.dateComponents([.day], from: startDate, to: endDate).day ?? 0, 1)
     }
 
+    private func elapsedDayCount(inPeriodStarting startDate: Date) -> Int {
+        let fullDayCount = dayCount(inPeriodStarting: startDate)
+        guard let endDate = calendar.date(byAdding: range.calendarComponent, value: 1, to: startDate) else {
+            return fullDayCount
+        }
+
+        let todayStart = calendar.startOfDay(for: Date())
+        guard startDate <= todayStart, todayStart < endDate else {
+            return fullDayCount
+        }
+
+        let tomorrowStart = calendar.date(byAdding: .day, value: 1, to: todayStart) ?? endDate
+        return min(
+            max(calendar.dateComponents([.day], from: startDate, to: min(tomorrowStart, endDate)).day ?? fullDayCount, 1),
+            fullDayCount
+        )
+    }
+
     private func periodTitle(startingAt startDate: Date) -> String {
         switch range {
         case .week:
@@ -1059,6 +1087,41 @@ private struct HistoryView: View {
         startFormatter.setLocalizedDateFormatFromTemplate("MMM d")
         endFormatter.setLocalizedDateFormatFromTemplate(endTemplate)
         return "\(startFormatter.string(from: startDate)) - \(endFormatter.string(from: endDate))"
+    }
+}
+
+private struct HistoryPeriodStatsView: View {
+    let stats: TBFocusPeriodStats
+
+    var body: some View {
+        HStack(alignment: .firstTextBaseline, spacing: 10) {
+            statItem(
+                label: NSLocalizedString("HistoryView.stats.total", comment: "Period total focus label"),
+                value: TBFocusDurationFormatter.compactDurationString(stats.totalSeconds)
+            )
+            Spacer(minLength: 4)
+            statItem(
+                label: NSLocalizedString("HistoryView.stats.average", comment: "Period daily average focus label"),
+                value: TBFocusDurationFormatter.compactDurationString(stats.averageSeconds)
+            )
+            Spacer(minLength: 4)
+            statItem(
+                label: NSLocalizedString("HistoryView.stats.goalDays", comment: "Period goal days label"),
+                value: "\(stats.goalDays)/\(stats.dayCount)"
+            )
+        }
+        .font(.caption2)
+        .lineLimit(1)
+    }
+
+    private func statItem(label: String, value: String) -> some View {
+        HStack(spacing: 3) {
+            Text(label)
+                .foregroundColor(.secondary)
+            Text(value)
+                .font(.system(.caption2).monospacedDigit())
+                .fontWeight(.semibold)
+        }
     }
 }
 

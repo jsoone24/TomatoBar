@@ -62,6 +62,11 @@
 "HistoryView.dailyGoal.label" = "Goal %@";
 "HistoryView.goalProgress.percent" = "%d%%";
 "HistoryView.goalProgress.summary" = "%@ / %@ (%d%%)";
+"HistoryView.stats.total" = "Total";
+"HistoryView.stats.average" = "Avg";
+"HistoryView.stats.goalDays" = "Goal";
+"HistoryView.stats.week" = "Week";
+"HistoryView.stats.month" = "Month";
 "HistoryView.duration.seconds" = "%d sec";
 "HistoryView.duration.minutes" = "%d min";
 "HistoryView.duration.minutesSeconds" = "%d min %d sec";

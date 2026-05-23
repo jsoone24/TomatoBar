@@ -390,8 +390,38 @@ class TBTimer: ObservableObject {
             completedFocusCount: cycleCompletedCount,
             todayFocusSeconds: focusHistory.totalFocusTime(on: now) + liveFocusDuration(on: now),
             dailyGoalSeconds: max(dailyFocusGoalMinutes, 1) * 60,
+            weekStats: widgetPeriodStats(containing: now, component: .weekOfYear),
+            monthStats: widgetPeriodStats(containing: now, component: .month),
             updatedAt: now
         )
+    }
+
+    private func widgetPeriodStats(containing date: Date,
+                                   component: Calendar.Component,
+                                   calendar: Calendar = .current) -> TBFocusPeriodStats {
+        let periodStart = calendar.dateInterval(of: component, for: date)?.start ?? calendar.startOfDay(for: date)
+        let dayCount = elapsedDayCount(inPeriodStarting: periodStart,
+                                       component: component,
+                                       containing: date,
+                                       calendar: calendar)
+        let dailyDurations = (0 ..< dayCount).compactMap { offset -> Int? in
+            guard let day = calendar.date(byAdding: .day, value: offset, to: periodStart) else {
+                return nil
+            }
+            return focusHistory.totalFocusTime(on: day) + liveFocusDuration(on: day, calendar: calendar)
+        }
+        return TBFocusPeriodStats(dailyDurations: dailyDurations,
+                                  goalDurationSeconds: max(dailyFocusGoalMinutes, 1) * 60)
+    }
+
+    private func elapsedDayCount(inPeriodStarting periodStart: Date,
+                                 component: Calendar.Component,
+                                 containing date: Date,
+                                 calendar: Calendar) -> Int {
+        let periodEnd = calendar.date(byAdding: component, value: 1, to: periodStart) ?? date
+        let todayStart = calendar.startOfDay(for: date)
+        let statsEnd = min(periodEnd, calendar.date(byAdding: .day, value: 1, to: todayStart) ?? periodEnd)
+        return max(calendar.dateComponents([.day], from: periodStart, to: statsEnd).day ?? 1, 1)
     }
 
     private var widgetModeTitle: String {

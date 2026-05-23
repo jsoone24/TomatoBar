@@ -10,6 +10,35 @@ enum TBWidgetSnapshotPhase: String, Codable, Equatable {
     case stopwatchPaused
 }
 
+struct TBFocusPeriodStats: Codable, Equatable {
+    let totalSeconds: Int
+    let averageSeconds: Int
+    let goalDays: Int
+    let dayCount: Int
+
+    init(totalSeconds: Int = 0,
+         averageSeconds: Int = 0,
+         goalDays: Int = 0,
+         dayCount: Int = 0) {
+        self.totalSeconds = max(totalSeconds, 0)
+        self.averageSeconds = max(averageSeconds, 0)
+        self.goalDays = max(goalDays, 0)
+        self.dayCount = max(dayCount, 0)
+    }
+
+    init(dailyDurations: [Int], goalDurationSeconds: Int) {
+        let dayCount = dailyDurations.count
+        let totalSeconds = dailyDurations.reduce(0) { $0 + max($1, 0) }
+        let safeGoalDurationSeconds = max(goalDurationSeconds, 1)
+        self.init(
+            totalSeconds: totalSeconds,
+            averageSeconds: dayCount > 0 ? totalSeconds / dayCount : 0,
+            goalDays: dailyDurations.filter { $0 >= safeGoalDurationSeconds }.count,
+            dayCount: dayCount
+        )
+    }
+}
+
 struct TBWidgetSnapshot: Codable, Equatable {
     static let appGroupIdentifier = "group.com.jsoone24.TomatoBar"
     static let widgetKind = "TomatoBarFocusStatusWidget"
@@ -28,6 +57,8 @@ struct TBWidgetSnapshot: Codable, Equatable {
     let completedFocusCount: Int
     let todayFocusSeconds: Int
     let dailyGoalSeconds: Int
+    let weekStats: TBFocusPeriodStats
+    let monthStats: TBFocusPeriodStats
     let updatedAt: Date
 
     static var placeholder: TBWidgetSnapshot {
@@ -46,6 +77,8 @@ struct TBWidgetSnapshot: Codable, Equatable {
             completedFocusCount: 0,
             todayFocusSeconds: 0,
             dailyGoalSeconds: 2 * 60 * 60,
+            weekStats: TBFocusPeriodStats(),
+            monthStats: TBFocusPeriodStats(),
             updatedAt: Date()
         )
     }
@@ -94,6 +127,37 @@ struct TBWidgetSnapshot: Codable, Equatable {
         let dayStart = calendar.startOfDay(for: date)
         let overlapStart = max(liveFocusStartedAt, dayStart)
         return max(0, Int(incrementEnd.timeIntervalSince(overlapStart)))
+    }
+
+    func displayWeekStats(at date: Date = Date(), calendar: Calendar = .current) -> TBFocusPeriodStats {
+        displayPeriodStats(weekStats, at: date, calendar: calendar)
+    }
+
+    func displayMonthStats(at date: Date = Date(), calendar: Calendar = .current) -> TBFocusPeriodStats {
+        displayPeriodStats(monthStats, at: date, calendar: calendar)
+    }
+
+    private func displayPeriodStats(_ stats: TBFocusPeriodStats,
+                                    at date: Date,
+                                    calendar: Calendar) -> TBFocusPeriodStats {
+        guard calendar.isDate(date, inSameDayAs: updatedAt) else {
+            return stats
+        }
+
+        let currentTodayFocusSeconds = displayTodayFocusSeconds(at: date, calendar: calendar)
+        let liveDeltaSeconds = max(0, currentTodayFocusSeconds - max(todayFocusSeconds, 0))
+        guard liveDeltaSeconds > 0 else {
+            return stats
+        }
+
+        let totalSeconds = stats.totalSeconds + liveDeltaSeconds
+        let crossesGoal = todayFocusSeconds < dailyGoalSeconds && currentTodayFocusSeconds >= dailyGoalSeconds
+        return TBFocusPeriodStats(
+            totalSeconds: totalSeconds,
+            averageSeconds: stats.dayCount > 0 ? totalSeconds / stats.dayCount : 0,
+            goalDays: stats.goalDays + (crossesGoal ? 1 : 0),
+            dayCount: stats.dayCount
+        )
     }
 }
 
@@ -153,6 +217,31 @@ enum TBFocusDurationFormatter {
         String.localizedStringWithFormat(
             NSLocalizedString("HistoryView.goalProgress.percent", comment: "Daily goal progress percent"),
             Int((Double(max(durationSeconds, 0)) / Double(max(goalDurationSeconds, 1)) * 100).rounded())
+        )
+    }
+
+    static func compactDurationString(_ durationSeconds: Int) -> String {
+        let safeDurationSeconds = max(durationSeconds, 0)
+        if safeDurationSeconds < 60 {
+            return String.localizedStringWithFormat(
+                NSLocalizedString("HistoryView.duration.seconds", comment: "Seconds duration"),
+                safeDurationSeconds
+            )
+        }
+
+        let minutes = safeDurationSeconds / 60
+        let hours = minutes / 60
+        let remainingMinutes = minutes % 60
+        if hours > 0 {
+            return String.localizedStringWithFormat(
+                NSLocalizedString("HistoryView.duration.hoursMinutes", comment: "Hours and minutes duration"),
+                hours,
+                remainingMinutes
+            )
+        }
+        return String.localizedStringWithFormat(
+            NSLocalizedString("HistoryView.duration.minutes", comment: "Minutes duration"),
+            minutes
         )
     }
 

@@ -62,6 +62,11 @@
 "HistoryView.dailyGoal.label" = "목표 %@";
 "HistoryView.goalProgress.percent" = "%d%%";
 "HistoryView.goalProgress.summary" = "%@ / %@ (%d%%)";
+"HistoryView.stats.total" = "총합";
+"HistoryView.stats.average" = "평균";
+"HistoryView.stats.goalDays" = "목표";
+"HistoryView.stats.week" = "주";
+"HistoryView.stats.month" = "월";
 "HistoryView.duration.seconds" = "%d초";
 "HistoryView.duration.minutes" = "%d분";
 "HistoryView.duration.minutesSeconds" = "%d분 %d초";
