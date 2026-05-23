@@ -208,9 +208,6 @@ private struct SettingsView: View {
                                                comment: "Daily focus goal label"))
                             .frame(maxWidth: .infinity, alignment: .leading)
                         GoalDurationEditor(totalMinutes: $dailyFocusGoalMinutes)
-                            .onChange(of: dailyFocusGoalMinutes) { _ in
-                                timer.refreshWidgetSnapshot()
-                            }
                     }
                 }
 
