@@ -56,9 +56,14 @@ class TBFocusHistoryStore: ObservableObject {
     private let calendar: Calendar
     private let encoder = JSONEncoder()
     private let decoder = JSONDecoder()
+    private let syncStore: TBCloudKitSyncStore
+    private var cancellables: Set<AnyCancellable> = []
 
-    init(fileManager: FileManager = .default, calendar: Calendar = .current) {
+    init(fileManager: FileManager = .default,
+         calendar: Calendar = .current,
+         syncStore: TBCloudKitSyncStore = .shared) {
         self.calendar = calendar
+        self.syncStore = syncStore
         encoder.dateEncodingStrategy = .iso8601
         decoder.dateDecodingStrategy = .iso8601
 
@@ -67,9 +72,11 @@ class TBFocusHistoryStore: ObservableObject {
             .appendingPathComponent("FocusSessions.jsonl")
 
         load()
+        bindSync()
     }
 
-    func record(startedAt: Date,
+    func record(id: UUID = UUID(),
+                startedAt: Date,
                 endedAt: Date,
                 completed: Bool,
                 focusIndexInSet: Int,
@@ -82,6 +89,7 @@ class TBFocusHistoryStore: ObservableObject {
         }
 
         let session = TBFocusSession(
+            id: id,
             startedAt: startedAt,
             endedAt: endedAt,
             durationSeconds: duration,
@@ -90,9 +98,7 @@ class TBFocusHistoryStore: ObservableObject {
             workIntervalsInSet: workIntervalsInSet,
             plannedDurationSeconds: plannedDurationSeconds
         )
-        if append(session) {
-            sessions.insert(session, at: 0)
-        }
+        save(session, sync: true)
     }
 
     func totalFocusTime(on date: Date = Date()) -> Int {
@@ -133,12 +139,18 @@ class TBFocusHistoryStore: ObservableObject {
             return
         }
 
-        sessions = content
+        let loadedSessions = content
             .split(separator: "\n")
             .compactMap { line in
                 try? decoder.decode(TBFocusSession.self, from: Data(line.utf8))
             }
             .sorted { $0.startedAt > $1.startedAt }
+        sessions = loadedSessions.reduce(into: []) { partialResult, session in
+            guard !partialResult.contains(where: { $0.id == session.id }) else {
+                return
+            }
+            partialResult.append(session)
+        }
     }
 
     private func append(_ session: TBFocusSession) -> Bool {
@@ -158,6 +170,72 @@ class TBFocusHistoryStore: ObservableObject {
             print("cannot write focus session: \(error)")
             return false
         }
+    }
+
+    private func save(_ session: TBFocusSession, sync: Bool) {
+        let updatesExistingSession = sessions.contains { $0.id == session.id }
+        guard upsert(session) else {
+            return
+        }
+
+        sortSessions()
+        if updatesExistingSession {
+            persist()
+        } else if !append(session) {
+            return
+        }
+
+        if sync {
+            syncStore.save(focusSession: session)
+        }
+    }
+
+    private func merge(_ remoteSessions: [TBFocusSession]) {
+        guard remoteSessions.reduce(false, { upsert($1) || $0 }) else {
+            return
+        }
+
+        sortSessions()
+        persist()
+    }
+
+    private func upsert(_ session: TBFocusSession) -> Bool {
+        if let index = sessions.firstIndex(where: { $0.id == session.id }) {
+            guard sessions[index] != session else {
+                return false
+            }
+            print("conflicting focus session ignored: \(session.id.uuidString)")
+            return false
+        }
+
+        sessions.append(session)
+        return true
+    }
+
+    private func persist() {
+        do {
+            var data = Data()
+            for session in sessions {
+                data.append(try encoder.encode(session))
+                data.append(0x0A)
+            }
+            try data.write(to: fileURL, options: .atomic)
+        } catch {
+            print("cannot write focus sessions: \(error)")
+        }
+    }
+
+    private func bindSync() {
+        syncStore.focusSessions
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] sessions in
+                self?.merge(sessions)
+            }
+            .store(in: &cancellables)
+    }
+
+    private func sortSessions() {
+        sessions.sort { $0.startedAt > $1.startedAt }
     }
 
     private func overlapDuration(of session: TBFocusSession, from rangeStart: Date, to rangeEnd: Date) -> Int {

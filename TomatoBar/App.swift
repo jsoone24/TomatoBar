@@ -31,6 +31,9 @@ class TBStatusItem: NSObject, NSApplicationDelegate {
     static var shared: TBStatusItem!
 
     func applicationDidFinishLaunching(_: Notification) {
+        TBCloudKitSyncStore.shared.start()
+        NSApplication.shared.registerForRemoteNotifications()
+
         let view = TBPopoverView()
 
         popover.behavior = .transient
@@ -85,5 +88,9 @@ class TBStatusItem: NSObject, NSApplicationDelegate {
         } else {
             showPopover(sender)
         }
+    }
+
+    func application(_: NSApplication, didReceiveRemoteNotification userInfo: [String: Any]) {
+        TBCloudKitSyncStore.shared.handleRemoteNotification(userInfo: userInfo)
     }
 }
