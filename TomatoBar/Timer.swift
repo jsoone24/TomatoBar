@@ -16,7 +16,7 @@ class TBTimer: ObservableObject {
     public let player = TBPlayer()
     private var consecutiveWorkIntervals: Int = 0
     private var notificationCenter = TBNotificationCenter()
-    private var finishTime: Date!
+    private var finishTime: Date?
     private var timerFormatter = DateComponentsFormatter()
     @Published var timeLeftString: String = ""
     @Published var timer: DispatchSourceTimer?
@@ -120,15 +120,19 @@ class TBTimer: ObservableObject {
     }
 
     func updateTimeLeft() {
-        timeLeftString = timerFormatter.string(from: Date(), to: finishTime)!
-        if timer != nil, showTimerInMenuBar {
-            TBStatusItem.shared.setTitle(title: timeLeftString)
-        } else {
+        guard let finishTime = finishTime, timer != nil else {
+            timeLeftString = ""
             TBStatusItem.shared.setTitle(title: nil)
+            return
         }
+
+        let timeLeft = max(finishTime.timeIntervalSinceNow, 0)
+        timeLeftString = timerFormatter.string(from: timeLeft) ?? "00:00"
+        TBStatusItem.shared.setTitle(title: showTimerInMenuBar ? timeLeftString : nil)
     }
 
     private func startTimer(seconds: Int) {
+        stopTimer()
         finishTime = Date().addingTimeInterval(TimeInterval(seconds))
 
         let queue = DispatchQueue(label: "Timer")
@@ -137,17 +141,24 @@ class TBTimer: ObservableObject {
         timer!.setEventHandler(handler: onTimerTick)
         timer!.setCancelHandler(handler: onTimerCancel)
         timer!.resume()
+        updateTimeLeft()
     }
 
     private func stopTimer() {
-        timer!.cancel()
+        let currentTimer = timer
         timer = nil
+        finishTime = nil
+        currentTimer?.cancel()
+        updateTimeLeft()
     }
 
     private func onTimerTick() {
         /* Cannot publish updates from background thread */
         DispatchQueue.main.async { [self] in
             updateTimeLeft()
+            guard let finishTime = finishTime else {
+                return
+            }
             let timeLeft = finishTime.timeIntervalSince(Date())
             if timeLeft <= 0 {
                 /*

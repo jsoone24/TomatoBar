@@ -57,12 +57,17 @@ class TBNotificationCenter: NSObject, UNUserNotificationCenterDelegate {
 
     func userNotificationCenter(_: UNUserNotificationCenter,
                                 didReceive response: UNNotificationResponse,
-                                withCompletionHandler _: @escaping () -> Void)
+                                withCompletionHandler completionHandler: @escaping () -> Void)
     {
-        if handler != nil {
-            if let action = TBNotification.Action(rawValue: response.actionIdentifier) {
-                handler!(action)
-            }
+        guard let handler = handler,
+              let action = TBNotification.Action(rawValue: response.actionIdentifier) else {
+            completionHandler()
+            return
+        }
+
+        DispatchQueue.main.async {
+            handler(action)
+            completionHandler()
         }
     }
 
