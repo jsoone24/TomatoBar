@@ -20,7 +20,7 @@ class TBLogEventTransition: TBLogEvent {
     private let toState: String
 
     init(fromContext ctx: TBStateMachine.Context) {
-        event = "\(ctx.event!)"
+        event = ctx.event.map { "\($0)" } ?? "restore"
         fromState = "\(ctx.fromState)"
         toState = "\(ctx.toState)"
     }
