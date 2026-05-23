@@ -1,3 +1,4 @@
+import Darwin
 import Foundation
 
 enum TBWidgetSnapshotPhase: String, Codable, Equatable {
@@ -40,7 +41,6 @@ struct TBFocusPeriodStats: Codable, Equatable {
 }
 
 struct TBWidgetSnapshot: Codable, Equatable {
-    static let appGroupIdentifier = "group.com.jsoone24.TomatoBar"
     static let widgetKind = "TomatoBarFocusStatusWidget"
 
     let phase: TBWidgetSnapshotPhase
@@ -301,15 +301,10 @@ enum TBWidgetSnapshotStore {
     }
 
     private static func snapshotFileURL(fileManager: FileManager = .default) -> URL? {
-        let directoryURL: URL
-        if let appGroupURL = fileManager.containerURL(forSecurityApplicationGroupIdentifier: TBWidgetSnapshot.appGroupIdentifier) {
-            directoryURL = appGroupURL
-        } else {
-            let baseURL = fileManager
-                .urls(for: .applicationSupportDirectory, in: .userDomainMask)
-                .first ?? fileManager.temporaryDirectory
-            directoryURL = baseURL.appendingPathComponent("TomatoBar", isDirectory: true)
-        }
+        let directoryURL = userHomeDirectoryURL(fileManager: fileManager)
+            .appendingPathComponent("Library", isDirectory: true)
+            .appendingPathComponent("Application Support", isDirectory: true)
+            .appendingPathComponent("TomatoBar", isDirectory: true)
 
         do {
             try fileManager.createDirectory(at: directoryURL, withIntermediateDirectories: true)
@@ -318,5 +313,14 @@ enum TBWidgetSnapshotStore {
             print("cannot create widget snapshot directory: \(error)")
             return nil
         }
+    }
+
+    private static func userHomeDirectoryURL(fileManager: FileManager) -> URL {
+        guard let passwd = getpwuid(getuid()),
+              let homeDirectory = passwd.pointee.pw_dir else {
+            return fileManager.homeDirectoryForCurrentUser
+        }
+
+        return URL(fileURLWithPath: String(cString: homeDirectory), isDirectory: true)
     }
 }
