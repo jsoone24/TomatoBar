@@ -88,18 +88,6 @@ private struct IntervalsView: View {
                 onUnitWidthChange: setUnitColumnWidth
             )
             IntervalNumberRow(
-                label: NSLocalizedString("IntervalsView.longRestIntervalLength.label",
-                                         comment: "Long rest interval label"),
-                value: $timer.longRestIntervalLength,
-                range: 1 ... 60,
-                unitLabel: NSLocalizedString("IntervalsView.minutesUnit",
-                                             comment: "Minutes unit"),
-                unitColumnWidth: unitColumnWidth,
-                onUnitWidthChange: setUnitColumnWidth
-            )
-            .help(NSLocalizedString("IntervalsView.longRestIntervalLength.help",
-                                    comment: "Long rest interval hint"))
-            IntervalNumberRow(
                 label: NSLocalizedString("IntervalsView.workIntervalsInSet.label",
                                          comment: "Work intervals in a set label"),
                 value: $timer.workIntervalsInSet,
@@ -111,6 +99,18 @@ private struct IntervalsView: View {
             )
             .help(NSLocalizedString("IntervalsView.workIntervalsInSet.help",
                                     comment: "Work intervals in set hint"))
+            IntervalNumberRow(
+                label: NSLocalizedString("IntervalsView.longRestIntervalLength.label",
+                                         comment: "Long rest interval label"),
+                value: $timer.longRestIntervalLength,
+                range: 1 ... 60,
+                unitLabel: NSLocalizedString("IntervalsView.minutesUnit",
+                                             comment: "Minutes unit"),
+                unitColumnWidth: unitColumnWidth,
+                onUnitWidthChange: setUnitColumnWidth
+            )
+            .help(NSLocalizedString("IntervalsView.longRestIntervalLength.help",
+                                    comment: "Long rest interval hint"))
             IntervalNumberRow(
                 label: NSLocalizedString("IntervalsView.workSetsToRepeat.label",
                                          comment: "Work sets to repeat label"),
