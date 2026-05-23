@@ -8,7 +8,7 @@
 "IntervalsView.workSetsToRepeat.help" = "무한 반복이면 중지할 때까지 계속 반복합니다";
 "IntervalsView.minutesUnit" = "분";
 "IntervalsView.intervalsUnit" = "회";
-"IntervalsView.setsUnit" = "세트";
+"IntervalsView.setsUnit" = "세트, 0=∞";
 "SettingsView.shortcut.label" = "단축키";
 "SettingsView.stopAfterBreak.label" = "휴식 후 중지";
 "SettingsView.showTimerInMenuBar.label" = "메뉴 막대에서 타이머 보기";

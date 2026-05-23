@@ -8,7 +8,7 @@
 "IntervalsView.workSetsToRepeat.help" = "无限重复会一直运行到手动停止";
 "IntervalsView.minutesUnit" = "分";
 "IntervalsView.intervalsUnit" = "次";
-"IntervalsView.setsUnit" = "组";
+"IntervalsView.setsUnit" = "组, 0=∞";
 "SettingsView.shortcut.label" = "快捷键";
 "SettingsView.stopAfterBreak.label" = "在休息后停止";
 "SettingsView.showTimerInMenuBar.label" = "在菜单栏中显示计时器";

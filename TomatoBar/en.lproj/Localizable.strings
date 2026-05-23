@@ -8,7 +8,7 @@
 "IntervalsView.workSetsToRepeat.help" = "Use unlimited to keep repeating until stopped";
 "IntervalsView.minutesUnit" = "min";
 "IntervalsView.intervalsUnit" = "times";
-"IntervalsView.setsUnit" = "sets";
+"IntervalsView.setsUnit" = "sets, 0=∞";
 "SettingsView.shortcut.label" = "Shortcut";
 "SettingsView.stopAfterBreak.label" = "Stop after break";
 "SettingsView.showTimerInMenuBar.label" = "Show timer in menu bar";
