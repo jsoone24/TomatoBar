@@ -125,27 +125,157 @@ private struct SoundsView: View {
     }
 }
 
+private struct CycleDotsView: View {
+    @EnvironmentObject var timer: TBTimer
+
+    var body: some View {
+        HStack(spacing: 6) {
+            ForEach(1 ... timer.cycleTotal, id: \.self) { index in
+                Circle()
+                    .fill(fillColor(for: index))
+                    .frame(width: 7, height: 7)
+                    .overlay(
+                        Circle()
+                            .stroke(index == timer.cycleActiveIndex ? Color.accentColor : Color.clear, lineWidth: 1.5)
+                    )
+            }
+        }
+    }
+
+    private func fillColor(for index: Int) -> Color {
+        if index <= timer.cycleCompletedCount {
+            return Color.accentColor
+        }
+        return Color.secondary.opacity(0.25)
+    }
+}
+
+private struct TimerStatusView: View {
+    @EnvironmentObject var timer: TBTimer
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(alignment: .firstTextBaseline) {
+                Text(timer.statusTitle)
+                    .font(.headline)
+                Spacer()
+                Text(timer.timer != nil ? timer.timeLeftString : "--:--")
+                    .font(.system(.title3).monospacedDigit())
+                    .foregroundColor(.secondary)
+            }
+            CycleDotsView().environmentObject(timer)
+            Text(timer.nextStepDescription)
+                .font(.caption)
+                .foregroundColor(.secondary)
+                .lineLimit(1)
+        }
+    }
+}
+
+private struct WeekFocusBarsView: View {
+    let totals: [TBDailyFocusTotal]
+
+    var body: some View {
+        HStack(alignment: .bottom, spacing: 6) {
+            ForEach(totals) { total in
+                VStack(spacing: 3) {
+                    Capsule()
+                        .fill(total.durationSeconds > 0 ? Color.accentColor : Color.secondary.opacity(0.2))
+                        .frame(height: barHeight(for: total.durationSeconds))
+                    Text(dayLabel(for: total.date))
+                        .font(.caption2)
+                        .foregroundColor(.secondary)
+                }
+                .frame(maxWidth: .infinity)
+            }
+        }
+        .frame(height: 54)
+    }
+
+    private func barHeight(for durationSeconds: Int) -> CGFloat {
+        let maxDuration = max(totals.map(\.durationSeconds).max() ?? 0, 1)
+        return max(CGFloat(durationSeconds) / CGFloat(maxDuration) * 34, durationSeconds > 0 ? 6 : 3)
+    }
+
+    private func dayLabel(for date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "E"
+        return String(formatter.string(from: date).prefix(1))
+    }
+}
+
+private struct HistoryView: View {
+    @ObservedObject var history: TBFocusHistoryStore
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Text(NSLocalizedString("HistoryView.today.label", comment: "Today label"))
+                    .font(.headline)
+                Spacer()
+                Text(durationString(history.totalFocusTime()))
+                    .font(.system(.headline).monospacedDigit())
+            }
+
+            WeekFocusBarsView(totals: history.dailyTotals())
+
+            Divider()
+
+            if history.recentSessions().isEmpty {
+                Text(NSLocalizedString("HistoryView.empty.label", comment: "No focus sessions label"))
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            } else {
+                ForEach(history.recentSessions()) { session in
+                    HistorySessionRow(session: session)
+                }
+            }
+        }
+        .padding(4)
+    }
+}
+
+private struct HistorySessionRow: View {
+    let session: TBFocusSession
+
+    var body: some View {
+        HStack(alignment: .firstTextBaseline) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(timeRangeString(session))
+                    .font(.caption)
+                Text(sessionLabel(session))
+                    .font(.caption2)
+                    .foregroundColor(.secondary)
+            }
+            Spacer()
+            Text(durationString(session.durationSeconds))
+                .font(.system(.caption).monospacedDigit())
+                .foregroundColor(session.completed ? .primary : .secondary)
+        }
+    }
+}
+
 private enum ChildView {
-    case intervals, settings, sounds
+    case history, intervals, settings, sounds
 }
 
 struct TBPopoverView: View {
     @ObservedObject var timer = TBTimer()
-    @State private var buttonHovered = false
-    @State private var activeChildView = ChildView.intervals
+    @State private var activeChildView = ChildView.history
 
     private var startLabel = NSLocalizedString("TBPopoverView.start.label", comment: "Start label")
     private var stopLabel = NSLocalizedString("TBPopoverView.stop.label", comment: "Stop label")
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
+            TimerStatusView().environmentObject(timer)
+
             Button {
                 timer.startStop()
                 TBStatusItem.shared.closePopover(nil)
             } label: {
-                Text(timer.timer != nil ?
-                     (buttonHovered ? stopLabel : timer.timeLeftString) :
-                        startLabel)
+                Text(timer.timer != nil ? stopLabel : startLabel)
                     /*
                       When appearance is set to "Dark" and accent color is set to "Graphite"
                       "defaultAction" button label's color is set to the same color as the
@@ -155,13 +285,12 @@ struct TBPopoverView: View {
                     .font(.system(.body).monospacedDigit())
                     .frame(maxWidth: .infinity)
             }
-            .onHover { over in
-                buttonHovered = over
-            }
             .controlSize(.large)
             .keyboardShortcut(.defaultAction)
 
             Picker("", selection: $activeChildView) {
+                Text(NSLocalizedString("TBPopoverView.history.label",
+                                       comment: "History label")).tag(ChildView.history)
                 Text(NSLocalizedString("TBPopoverView.intervals.label",
                                        comment: "Intervals label")).tag(ChildView.intervals)
                 Text(NSLocalizedString("TBPopoverView.settings.label",
@@ -175,6 +304,8 @@ struct TBPopoverView: View {
 
             GroupBox {
                 switch activeChildView {
+                case .history:
+                    HistoryView(history: timer.focusHistory)
                 case .intervals:
                     IntervalsView().environmentObject(timer)
                 case .settings:
@@ -226,6 +357,43 @@ struct TBPopoverView: View {
 //            .frame(width: 240, height: 276)
             .padding(12)
     }
+}
+
+private func durationString(_ durationSeconds: Int) -> String {
+    if durationSeconds < 60 {
+        return String.localizedStringWithFormat(
+            NSLocalizedString("HistoryView.duration.seconds", comment: "Seconds duration"),
+            durationSeconds
+        )
+    }
+
+    let minutes = durationSeconds / 60
+    let hours = minutes / 60
+    let remainingMinutes = minutes % 60
+    if hours > 0 {
+        return String.localizedStringWithFormat(
+            NSLocalizedString("HistoryView.duration.hoursMinutes", comment: "Hours and minutes duration"),
+            hours,
+            remainingMinutes
+        )
+    }
+    return String.localizedStringWithFormat(
+        NSLocalizedString("HistoryView.duration.minutes", comment: "Minutes duration"),
+        minutes
+    )
+}
+
+private func timeRangeString(_ session: TBFocusSession) -> String {
+    let formatter = DateFormatter()
+    formatter.timeStyle = .short
+    return "\(formatter.string(from: session.startedAt)) - \(formatter.string(from: session.endedAt))"
+}
+
+private func sessionLabel(_ session: TBFocusSession) -> String {
+    let format = session.completed
+        ? NSLocalizedString("HistoryView.session.completed", comment: "Completed session label")
+        : NSLocalizedString("HistoryView.session.stopped", comment: "Stopped session label")
+    return String.localizedStringWithFormat(format, session.focusIndexInSet, session.workIntervalsInSet)
 }
 
 #if DEBUG

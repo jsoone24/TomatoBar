@@ -2,6 +2,13 @@ import KeyboardShortcuts
 import SwiftState
 import SwiftUI
 
+private struct TBActiveFocusSession {
+    let startedAt: Date
+    let focusIndexInSet: Int
+    let workIntervalsInSet: Int
+    let plannedDurationSeconds: Int
+}
+
 class TBTimer: ObservableObject {
     @AppStorage("stopAfterBreak") var stopAfterBreak = false
     @AppStorage("showTimerInMenuBar") var showTimerInMenuBar = true
@@ -14,12 +21,94 @@ class TBTimer: ObservableObject {
 
     private var stateMachine = TBStateMachine(state: .idle)
     public let player = TBPlayer()
-    private var consecutiveWorkIntervals: Int = 0
+    public let focusHistory = TBFocusHistoryStore()
+    public let activeTimerStore = TBActiveTimerStore()
+    @Published private var consecutiveWorkIntervals: Int = 0
+    @Published private var activeRestKind: TBRestKind?
+    private var activeFocusSession: TBActiveFocusSession?
+    private var activeTimerRevision: Int = 0
     private var notificationCenter = TBNotificationCenter()
     private var finishTime: Date?
     private var timerFormatter = DateComponentsFormatter()
     @Published var timeLeftString: String = ""
     @Published var timer: DispatchSourceTimer?
+
+    var statusTitle: String {
+        switch stateMachine.state {
+        case .idle:
+            return NSLocalizedString("TBTimer.status.idle", comment: "Idle timer status")
+        case .work:
+            return String.localizedStringWithFormat(
+                NSLocalizedString("TBTimer.status.focus", comment: "Focus timer status"),
+                currentFocusIndexInSet,
+                safeWorkIntervalsInSet
+            )
+        case .rest:
+            if activeRestKind == .long {
+                return NSLocalizedString("TBTimer.status.longBreak", comment: "Long break timer status")
+            }
+            return NSLocalizedString("TBTimer.status.shortBreak", comment: "Short break timer status")
+        }
+    }
+
+    var nextStepDescription: String {
+        switch stateMachine.state {
+        case .idle:
+            return String.localizedStringWithFormat(
+                NSLocalizedString("TBTimer.next.focus", comment: "Next focus timer status"),
+                1,
+                safeWorkIntervalsInSet
+            )
+        case .work:
+            if currentFocusIndexInSet >= safeWorkIntervalsInSet {
+                return String.localizedStringWithFormat(
+                    NSLocalizedString("TBTimer.next.longBreak", comment: "Next long break status"),
+                    longRestIntervalLength
+                )
+            }
+            return String.localizedStringWithFormat(
+                NSLocalizedString("TBTimer.next.shortBreak", comment: "Next short break status"),
+                shortRestIntervalLength
+            )
+        case .rest:
+            let nextFocusIndex = activeRestKind == .long ? 1 : min(consecutiveWorkIntervals + 1, safeWorkIntervalsInSet)
+            return String.localizedStringWithFormat(
+                NSLocalizedString("TBTimer.next.focus", comment: "Next focus timer status"),
+                nextFocusIndex,
+                safeWorkIntervalsInSet
+            )
+        }
+    }
+
+    var cycleTotal: Int {
+        safeWorkIntervalsInSet
+    }
+
+    var cycleCompletedCount: Int {
+        switch stateMachine.state {
+        case .idle:
+            return 0
+        case .work:
+            return min(consecutiveWorkIntervals, safeWorkIntervalsInSet)
+        case .rest:
+            return activeRestKind == .long ? safeWorkIntervalsInSet : min(consecutiveWorkIntervals, safeWorkIntervalsInSet)
+        }
+    }
+
+    var cycleActiveIndex: Int? {
+        guard stateMachine.state == .work else {
+            return nil
+        }
+        return currentFocusIndexInSet
+    }
+
+    private var currentFocusIndexInSet: Int {
+        min(max(consecutiveWorkIntervals + (stateMachine.state == .work ? 1 : 0), 1), safeWorkIntervalsInSet)
+    }
+
+    private var safeWorkIntervalsInSet: Int {
+        max(workIntervalsInSet, 1)
+    }
 
     init() {
         /*
@@ -74,6 +163,9 @@ class TBTimer: ObservableObject {
         timerFormatter.unitsStyle = .positional
         timerFormatter.allowedUnits = [.minute, .second]
         timerFormatter.zeroFormattingBehavior = .pad
+
+        activeTimerRevision = activeTimerStore.snapshot?.revision ?? 0
+        publishActiveTimer(phase: .idle, startedAt: nil, expectedEndAt: nil)
 
         KeyboardShortcuts.onKeyUp(for: .startStopTimer, action: startStop)
         notificationCenter.setActionHandler(handler: onNotificationAction)
@@ -131,9 +223,11 @@ class TBTimer: ObservableObject {
         TBStatusItem.shared.setTitle(title: showTimerInMenuBar ? timeLeftString : nil)
     }
 
-    private func startTimer(seconds: Int) {
+    @discardableResult
+    private func startTimer(seconds: Int, startedAt: Date = Date()) -> Date {
         stopTimer()
-        finishTime = Date().addingTimeInterval(TimeInterval(seconds))
+        let expectedEndAt = startedAt.addingTimeInterval(TimeInterval(seconds))
+        finishTime = expectedEndAt
 
         let queue = DispatchQueue(label: "Timer")
         timer = DispatchSource.makeTimerSource(flags: .strict, queue: queue)
@@ -142,6 +236,7 @@ class TBTimer: ObservableObject {
         timer!.setCancelHandler(handler: onTimerCancel)
         timer!.resume()
         updateTimeLeft()
+        return expectedEndAt
     }
 
     private func stopTimer() {
@@ -187,18 +282,38 @@ class TBTimer: ObservableObject {
     }
 
     private func onWorkStart(context _: TBStateMachine.Context) {
+        let plannedDurationSeconds = workIntervalLength * 60
+        let focusIndexInSet = currentFocusIndexInSet
+        let startedAt = Date()
+        activeRestKind = nil
+        activeFocusSession = TBActiveFocusSession(
+            startedAt: startedAt,
+            focusIndexInSet: focusIndexInSet,
+            workIntervalsInSet: safeWorkIntervalsInSet,
+            plannedDurationSeconds: plannedDurationSeconds
+        )
         TBStatusItem.shared.setIcon(name: .work)
         player.playWindup()
         player.startTicking()
-        startTimer(seconds: workIntervalLength * 60)
+        let expectedEndAt = startTimer(seconds: plannedDurationSeconds, startedAt: startedAt)
+        publishActiveTimer(
+            phase: .work,
+            startedAt: startedAt,
+            expectedEndAt: expectedEndAt,
+            focusIndexInSet: focusIndexInSet
+        )
     }
 
     private func onWorkFinish(context _: TBStateMachine.Context) {
+        finishActiveFocusSession(completed: true)
         consecutiveWorkIntervals += 1
         player.playDing()
     }
 
-    private func onWorkEnd(context _: TBStateMachine.Context) {
+    private func onWorkEnd(context ctx: TBStateMachine.Context) {
+        if ctx.toState == .idle {
+            finishActiveFocusSession(completed: false)
+        }
         player.stopTicking()
     }
 
@@ -206,11 +321,13 @@ class TBTimer: ObservableObject {
         var body = NSLocalizedString("TBTimer.onRestStart.short.body", comment: "Short break body")
         var length = shortRestIntervalLength
         var imgName = NSImage.Name.shortRest
-        if consecutiveWorkIntervals >= workIntervalsInSet {
+        if consecutiveWorkIntervals >= safeWorkIntervalsInSet {
+            activeRestKind = .long
             body = NSLocalizedString("TBTimer.onRestStart.long.body", comment: "Long break body")
             length = longRestIntervalLength
             imgName = .longRest
-            consecutiveWorkIntervals = 0
+        } else {
+            activeRestKind = .short
         }
         notificationCenter.send(
             title: NSLocalizedString("TBTimer.onRestStart.title", comment: "Time's up title"),
@@ -218,10 +335,23 @@ class TBTimer: ObservableObject {
             category: .restStarted
         )
         TBStatusItem.shared.setIcon(name: imgName)
-        startTimer(seconds: length * 60)
+        let startedAt = Date()
+        let expectedEndAt = startTimer(seconds: length * 60, startedAt: startedAt)
+        publishActiveTimer(
+            phase: .rest,
+            startedAt: startedAt,
+            expectedEndAt: expectedEndAt,
+            focusIndexInSet: min(consecutiveWorkIntervals, safeWorkIntervalsInSet),
+            restKind: activeRestKind
+        )
     }
 
     private func onRestFinish(context ctx: TBStateMachine.Context) {
+        let finishedLongRest = activeRestKind == .long
+        activeRestKind = nil
+        if finishedLongRest {
+            consecutiveWorkIntervals = 0
+        }
         if ctx.event == .skipRest {
             return
         }
@@ -232,9 +362,53 @@ class TBTimer: ObservableObject {
         )
     }
 
-    private func onIdleStart(context _: TBStateMachine.Context) {
+    private func onIdleStart(context ctx: TBStateMachine.Context) {
+        if ctx.fromState == .work {
+            finishActiveFocusSession(completed: false)
+        }
         stopTimer()
         TBStatusItem.shared.setIcon(name: .idle)
+        activeRestKind = nil
+        activeFocusSession = nil
         consecutiveWorkIntervals = 0
+        publishActiveTimer(phase: .idle, startedAt: nil, expectedEndAt: nil)
+    }
+
+    private func finishActiveFocusSession(completed: Bool) {
+        guard let activeFocusSession = activeFocusSession else {
+            return
+        }
+
+        let plannedEnd = activeFocusSession.startedAt.addingTimeInterval(
+            TimeInterval(activeFocusSession.plannedDurationSeconds)
+        )
+        let endedAt = completed ? plannedEnd : min(Date(), plannedEnd)
+        focusHistory.record(
+            startedAt: activeFocusSession.startedAt,
+            endedAt: endedAt,
+            completed: completed,
+            focusIndexInSet: activeFocusSession.focusIndexInSet,
+            workIntervalsInSet: activeFocusSession.workIntervalsInSet,
+            plannedDurationSeconds: activeFocusSession.plannedDurationSeconds
+        )
+        self.activeFocusSession = nil
+    }
+
+    private func publishActiveTimer(phase: TBTimerPhase,
+                                    startedAt: Date?,
+                                    expectedEndAt: Date?,
+                                    focusIndexInSet: Int = 0,
+                                    restKind: TBRestKind? = nil) {
+        activeTimerRevision += 1
+        activeTimerStore.save(TBActiveTimerSnapshot(
+            phase: phase,
+            startedAt: startedAt,
+            expectedEndAt: expectedEndAt,
+            focusIndexInSet: focusIndexInSet,
+            workIntervalsInSet: safeWorkIntervalsInSet,
+            restKind: restKind,
+            revision: activeTimerRevision,
+            updatedAt: Date()
+        ))
     }
 }
