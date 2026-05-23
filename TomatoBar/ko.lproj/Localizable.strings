@@ -64,7 +64,9 @@
 "HistoryView.goalProgress.summary" = "%@ / %@ (%d%%)";
 "HistoryView.duration.seconds" = "%d초";
 "HistoryView.duration.minutes" = "%d분";
+"HistoryView.duration.minutesSeconds" = "%d분 %d초";
 "HistoryView.duration.hoursMinutes" = "%d시간 %d분";
+"HistoryView.duration.hoursMinutesSeconds" = "%d시간 %d분 %d초";
 "HistoryView.session.completed" = "집중 %d/%d";
 "HistoryView.session.stopped" = "집중 %d/%d 중지됨";
 "HistoryView.session.stopwatch" = "스톱워치 집중";

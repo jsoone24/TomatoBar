@@ -64,7 +64,9 @@
 "HistoryView.goalProgress.summary" = "%@ / %@ (%d%%)";
 "HistoryView.duration.seconds" = "%d sec";
 "HistoryView.duration.minutes" = "%d min";
+"HistoryView.duration.minutesSeconds" = "%d min %d sec";
 "HistoryView.duration.hoursMinutes" = "%dh %dm";
+"HistoryView.duration.hoursMinutesSeconds" = "%dh %dm %d sec";
 "HistoryView.session.completed" = "Focus %d/%d";
 "HistoryView.session.stopped" = "Focus %d/%d stopped";
 "HistoryView.session.stopwatch" = "Stopwatch focus";

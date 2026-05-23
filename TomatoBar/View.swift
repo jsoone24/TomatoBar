@@ -1329,33 +1329,38 @@ struct TBPopoverView: View {
 }
 
 private func durationString(_ durationSeconds: Int) -> String {
-    if durationSeconds < 60 {
+    let safeDurationSeconds = max(durationSeconds, 0)
+    let seconds = safeDurationSeconds % 60
+    let totalMinutes = safeDurationSeconds / 60
+    let hours = totalMinutes / 60
+    let remainingMinutes = totalMinutes % 60
+
+    if safeDurationSeconds < 60 {
         return String.localizedStringWithFormat(
             NSLocalizedString("HistoryView.duration.seconds", comment: "Seconds duration"),
-            durationSeconds
+            safeDurationSeconds
         )
     }
 
-    let minutes = durationSeconds / 60
-    let hours = minutes / 60
-    let remainingMinutes = minutes % 60
     if hours > 0 {
         return String.localizedStringWithFormat(
-            NSLocalizedString("HistoryView.duration.hoursMinutes", comment: "Hours and minutes duration"),
+            NSLocalizedString("HistoryView.duration.hoursMinutesSeconds", comment: "Hours, minutes, and seconds duration"),
             hours,
-            remainingMinutes
+            remainingMinutes,
+            seconds
         )
     }
     return String.localizedStringWithFormat(
-        NSLocalizedString("HistoryView.duration.minutes", comment: "Minutes duration"),
-        minutes
+        NSLocalizedString("HistoryView.duration.minutesSeconds", comment: "Minutes and seconds duration"),
+        totalMinutes,
+        seconds
     )
 }
 
 private func goalLabel(goalDurationSeconds: Int) -> String {
     String.localizedStringWithFormat(
         NSLocalizedString("HistoryView.dailyGoal.label", comment: "Daily focus goal label"),
-        durationString(goalDurationSeconds)
+        goalDurationString(goalDurationSeconds)
     )
 }
 
@@ -1370,8 +1375,33 @@ private func goalProgressSummary(durationSeconds: Int, goalDurationSeconds: Int)
     String.localizedStringWithFormat(
         NSLocalizedString("HistoryView.goalProgress.summary", comment: "Daily goal progress summary"),
         durationString(durationSeconds),
-        durationString(goalDurationSeconds),
+        goalDurationString(goalDurationSeconds),
         goalProgressPercent(durationSeconds: durationSeconds, goalDurationSeconds: goalDurationSeconds)
+    )
+}
+
+private func goalDurationString(_ durationSeconds: Int) -> String {
+    let safeDurationSeconds = max(durationSeconds, 0)
+    if safeDurationSeconds < 60 {
+        return String.localizedStringWithFormat(
+            NSLocalizedString("HistoryView.duration.seconds", comment: "Seconds duration"),
+            safeDurationSeconds
+        )
+    }
+
+    let minutes = safeDurationSeconds / 60
+    let hours = minutes / 60
+    let remainingMinutes = minutes % 60
+    if hours > 0 {
+        return String.localizedStringWithFormat(
+            NSLocalizedString("HistoryView.duration.hoursMinutes", comment: "Hours and minutes duration"),
+            hours,
+            remainingMinutes
+        )
+    }
+    return String.localizedStringWithFormat(
+        NSLocalizedString("HistoryView.duration.minutes", comment: "Minutes duration"),
+        minutes
     )
 }
 

@@ -64,7 +64,9 @@
 "HistoryView.goalProgress.summary" = "%@ / %@ (%d%%)";
 "HistoryView.duration.seconds" = "%d 秒";
 "HistoryView.duration.minutes" = "%d 分";
+"HistoryView.duration.minutesSeconds" = "%d 分 %d 秒";
 "HistoryView.duration.hoursMinutes" = "%d 小时 %d 分";
+"HistoryView.duration.hoursMinutesSeconds" = "%d 小时 %d 分 %d 秒";
 "HistoryView.session.completed" = "专注 %d/%d";
 "HistoryView.session.stopped" = "专注 %d/%d 已停止";
 "HistoryView.session.stopwatch" = "秒表专注";
