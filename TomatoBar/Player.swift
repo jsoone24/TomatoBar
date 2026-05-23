@@ -23,7 +23,7 @@ class TBPlayer: ObservableObject {
     }
 
     private func setVolume(_ sound: AVAudioPlayer, _ volume: Double) {
-        sound.setVolume(Float(volume), fadeDuration: 0)
+        sound.setVolume(Float(min(max(volume, 0), 1)), fadeDuration: 0)
     }
 
     init() {

@@ -1,3 +1,4 @@
+import AppKit
 import KeyboardShortcuts
 import LaunchAtLogin
 import SwiftUI
@@ -355,11 +356,68 @@ private struct VolumeSlider: View {
     @Binding var volume: Double
 
     var body: some View {
-        Slider(value: $volume, in: 0...2) {
-            Text(String(format: "%.1f", volume))
-        }.gesture(TapGesture(count: 2).onEnded({
+        HStack(spacing: 6) {
+            TickedVolumeSlider(volume: $volume)
+            Text("\(displayValue)")
+                .font(.system(.caption).monospacedDigit())
+                .foregroundColor(.secondary)
+                .frame(width: 18, alignment: .trailing)
+        }
+        .gesture(TapGesture(count: 2).onEnded({
             volume = 1.0
         }))
+    }
+
+    private var displayValue: Int {
+        min(max(Int((volume * 10).rounded()), 0), 10)
+    }
+}
+
+private struct TickedVolumeSlider: NSViewRepresentable {
+    @Binding var volume: Double
+
+    func makeNSView(context: Context) -> NSSlider {
+        let slider = NSSlider(value: displayValue(from: volume),
+                              minValue: 0,
+                              maxValue: 10,
+                              target: context.coordinator,
+                              action: #selector(Coordinator.valueChanged(_:)))
+        slider.numberOfTickMarks = 11
+        slider.allowsTickMarkValuesOnly = true
+        slider.tickMarkPosition = .below
+        slider.controlSize = .small
+        slider.isContinuous = true
+        return slider
+    }
+
+    func updateNSView(_ slider: NSSlider, context _: Context) {
+        let value = displayValue(from: volume)
+        guard abs(slider.doubleValue - value) > 0.01 else {
+            return
+        }
+        slider.doubleValue = value
+    }
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator(volume: $volume)
+    }
+
+    private func displayValue(from volume: Double) -> Double {
+        Double(min(max(Int((volume * 10).rounded()), 0), 10))
+    }
+
+    final class Coordinator: NSObject {
+        private var volume: Binding<Double>
+
+        init(volume: Binding<Double>) {
+            self.volume = volume
+        }
+
+        @objc func valueChanged(_ sender: NSSlider) {
+            let steppedValue = min(max(Int(sender.doubleValue.rounded()), 0), 10)
+            sender.doubleValue = Double(steppedValue)
+            volume.wrappedValue = Double(steppedValue) / 10
+        }
     }
 }
 
@@ -368,7 +426,7 @@ private struct SoundsView: View {
 
     private var columns = [
         GridItem(.flexible()),
-        GridItem(.fixed(110))
+        GridItem(.fixed(132))
     ]
 
     var body: some View {

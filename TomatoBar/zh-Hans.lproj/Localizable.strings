@@ -4,7 +4,7 @@
 "IntervalsView.longRestIntervalLength.help" = "在完成一组工作后的长休息时长";
 "IntervalsView.workIntervalsInSet.label" = "一组中工作的次数:";
 "IntervalsView.workIntervalsInSet.help" = "每组在长时间休息后的工作次数";
-"IntervalsView.workSetsToRepeat.label" = "重复组数 (0=∞):";
+"IntervalsView.workSetsToRepeat.label" = "重复组数 (0 = ∞):";
 "IntervalsView.workSetsToRepeat.help" = "无限重复会一直运行到手动停止";
 "IntervalsView.minutesUnit" = "分";
 "IntervalsView.intervalsUnit" = "次";
