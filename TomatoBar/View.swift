@@ -305,7 +305,7 @@ private enum ChildView {
 }
 
 struct TBPopoverView: View {
-    @ObservedObject var timer = TBTimer()
+    @StateObject private var timer = TBTimer()
     @State private var activeChildView = ChildView.history
 
     private var startLabel = NSLocalizedString("TBPopoverView.start.label", comment: "Start label")
@@ -404,23 +404,7 @@ struct TBPopoverView: View {
                 .keyboardShortcut("q")
             }
         }
-        #if DEBUG
-            /*
-             After several hours of Googling and trying various StackOverflow
-             recipes I still haven't figured a reliable way to auto resize
-             popover to fit all it's contents (pull requests are welcome!).
-             The following code block is used to determine the optimal
-             geometry of the popover.
-             */
-            .overlay(
-                GeometryReader { proxy in
-                    debugSize(proxy: proxy)
-                }
-            )
-        #endif
-            /* Use values from GeometryReader */
-//            .frame(width: 240, height: 276)
-            .padding(12)
+        .padding(12)
     }
 
     private var primaryButtonLabel: String {
@@ -479,10 +463,3 @@ private func sessionLabel(_ session: TBFocusSession) -> String {
         : NSLocalizedString("HistoryView.session.stopped", comment: "Stopped session label")
     return String.localizedStringWithFormat(format, session.focusIndexInSet, session.workIntervalsInSet)
 }
-
-#if DEBUG
-    func debugSize(proxy: GeometryProxy) -> some View {
-        print("Optimal popover size:", proxy.size)
-        return Color.clear
-    }
-#endif
