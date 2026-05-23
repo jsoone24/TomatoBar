@@ -1,3 +1,4 @@
+import CoreServices
 import SwiftUI
 import LaunchAtLogin
 
@@ -33,6 +34,8 @@ class TBStatusItem: NSObject, NSApplicationDelegate {
     static var shared: TBStatusItem!
 
     func applicationDidFinishLaunching(_: Notification) {
+        TBWidgetExtensionRegistrar.register()
+
         statusBarItem = NSStatusBar.system.statusItem(
             withLength: NSStatusItem.variableLength
         )
@@ -129,6 +132,48 @@ class TBStatusItem: NSObject, NSApplicationDelegate {
             }
 
             self.popover.positioningRect = button.bounds
+        }
+    }
+}
+
+private enum TBWidgetExtensionRegistrar {
+    private static let extensionRelativePath = "Contents/PlugIns/TomatoBarWidgetExtension.appex"
+
+    static func register() {
+        registerContainingBundle()
+        registerWidgetExtension()
+    }
+
+    private static func registerContainingBundle() {
+        let status = LSRegisterURL(Bundle.main.bundleURL as CFURL, true)
+        guard status != noErr else {
+            return
+        }
+
+        print("widget registration warning: Launch Services returned \(status)")
+    }
+
+    private static func registerWidgetExtension() {
+        let extensionURL = Bundle.main.bundleURL.appendingPathComponent(extensionRelativePath)
+        guard FileManager.default.fileExists(atPath: extensionURL.path) else {
+            return
+        }
+
+        DispatchQueue.global(qos: .utility).async {
+            let process = Process()
+            process.executableURL = URL(fileURLWithPath: "/usr/bin/pluginkit")
+            process.arguments = ["-a", extensionURL.path]
+
+            do {
+                try process.run()
+                process.waitUntilExit()
+                guard process.terminationStatus != 0 else {
+                    return
+                }
+                print("widget registration warning: pluginkit exited with \(process.terminationStatus)")
+            } catch {
+                print("widget registration warning: cannot run pluginkit: \(error)")
+            }
         }
     }
 }
