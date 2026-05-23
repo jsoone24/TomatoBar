@@ -23,6 +23,7 @@ class TBTimer: ObservableObject {
     @AppStorage("longRestIntervalLength") var longRestIntervalLength = 15
     @AppStorage("workIntervalsInSet") var workIntervalsInSet = 4
     @AppStorage("workSetsToRepeat") var workSetsToRepeat = 0
+    @AppStorage("dailyFocusGoalMinutes") private var dailyFocusGoalMinutes = 120
     // This preference is "hidden"
     @AppStorage("overrunTimeLimit") var overrunTimeLimit = -60.0
 
@@ -48,6 +49,7 @@ class TBTimer: ObservableObject {
     private var stopwatchAccumulatedSeconds = 0
     private var stopwatchTickTimer: DispatchSourceTimer?
     private var timerFormatter = DateComponentsFormatter()
+    private var cancellables = Set<AnyCancellable>()
     @Published var timeLeftString: String = ""
     @Published var timer: DispatchSourceTimer?
 
@@ -297,7 +299,14 @@ class TBTimer: ObservableObject {
                             andSelector: #selector(handleGetURLEvent(_:withReplyEvent:)),
                             forEventClass: AEEventClass(kInternetEventClass),
                             andEventID: AEEventID(kAEGetURL))
+        focusHistory.$sessions
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                self?.refreshWidgetSnapshot()
+            }
+            .store(in: &cancellables)
         updateMenuBarTitle()
+        refreshWidgetSnapshot()
     }
 
     @objc func handleGetURLEvent(_ event: NSAppleEventDescriptor,
@@ -318,6 +327,8 @@ class TBTimer: ObservableObject {
             return
         }
         switch host.lowercased() {
+        case "open":
+            return
         case "startstop":
             startStop()
         default:
@@ -355,6 +366,82 @@ class TBTimer: ObservableObject {
             timeLeftString = idleTimeString
             updateMenuBarTitle()
         }
+        refreshWidgetSnapshot()
+    }
+
+    func refreshWidgetSnapshot() {
+        TBWidgetSnapshotStore.save(makeWidgetSnapshot())
+    }
+
+    private func makeWidgetSnapshot(at now: Date = Date()) -> TBWidgetSnapshot {
+        let liveFocusWindow = widgetLiveFocusWindow(at: now)
+        return TBWidgetSnapshot(
+            phase: widgetSnapshotPhase,
+            modeTitle: widgetModeTitle,
+            statusTitle: statusTitle,
+            detailText: nextStepDescription,
+            timeText: timeLeftString,
+            expectedEndAt: widgetExpectedEndAt,
+            liveFocusStartedAt: liveFocusWindow.startedAt,
+            liveFocusIncrementStartedAt: liveFocusWindow.incrementStartedAt,
+            liveFocusIncrementEndedAt: liveFocusWindow.incrementEndedAt,
+            focusIndexInSet: timerMode == .pomodoro ? currentFocusIndexInSet : 1,
+            workIntervalsInSet: timerMode == .pomodoro ? safeWorkIntervalsInSet : 1,
+            completedFocusCount: cycleCompletedCount,
+            todayFocusSeconds: focusHistory.totalFocusTime(on: now) + liveFocusDuration(on: now),
+            dailyGoalSeconds: max(dailyFocusGoalMinutes, 1) * 60,
+            updatedAt: now
+        )
+    }
+
+    private var widgetModeTitle: String {
+        let key = timerMode == .pomodoro ? "TBTimerMode.pomodoro.label" : "TBTimerMode.stopwatch.label"
+        return NSLocalizedString(key, comment: "Timer mode label")
+    }
+
+    private var widgetSnapshotPhase: TBWidgetSnapshotPhase {
+        if timerMode == .stopwatch {
+            switch stopwatchPhase {
+            case .idle:
+                return .idle
+            case .running:
+                return .stopwatchRunning
+            case .paused:
+                return .stopwatchPaused
+            }
+        }
+
+        switch stateMachine.state {
+        case .idle:
+            return .idle
+        case .work:
+            return .focus
+        case .rest:
+            return activeRestKind == .long ? .longBreak : .shortBreak
+        case .pausedWork, .pausedRest:
+            return .paused
+        }
+    }
+
+    private var widgetExpectedEndAt: Date? {
+        switch stateMachine.state {
+        case .work, .rest:
+            return finishTime
+        case .idle, .pausedWork, .pausedRest:
+            return nil
+        }
+    }
+
+    private func widgetLiveFocusWindow(at now: Date) -> (startedAt: Date?, incrementStartedAt: Date?, incrementEndedAt: Date?) {
+        if timerMode == .stopwatch, stopwatchPhase == .running {
+            return (stopwatchStartedAt, now, nil)
+        }
+
+        guard stateMachine.state == .work,
+              let activeFocusSession = activeFocusSession else {
+            return (nil, nil, nil)
+        }
+        return (activeFocusSession.startedAt, now, finishTime)
     }
 
     func skipRest() {
@@ -469,6 +556,8 @@ class TBTimer: ObservableObject {
 
         if publish {
             publishActiveTimer(phase: .idle, startedAt: nil, expectedEndAt: nil)
+        } else {
+            refreshWidgetSnapshot()
         }
     }
 
@@ -921,6 +1010,7 @@ class TBTimer: ObservableObject {
             pausedAt: pausedAt,
             completedWorkSets: completedWorkSets
         ))
+        refreshWidgetSnapshot()
     }
 
     private func publishStopwatch(phase: TBTimerPhase) {
@@ -939,6 +1029,7 @@ class TBTimer: ObservableObject {
             runningStartedAt: stopwatchRunningStartedAt,
             pausedAt: stopwatchPausedAt
         ))
+        refreshWidgetSnapshot()
     }
 
     private func resumeActiveTimerIfNeeded() {

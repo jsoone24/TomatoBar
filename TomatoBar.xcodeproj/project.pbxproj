@@ -19,13 +19,43 @@
 		8AA5B3EB281295DB00BE1A6C /* KeyboardShortcuts in Frameworks */ = {isa = PBXBuildFile; productRef = 8AA5B3EA281295DB00BE1A6C /* KeyboardShortcuts */; };
 		8AA5B3F22812A74600BE1A6C /* Notifications.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8AA5B3F12812A74600BE1A6C /* Notifications.swift */; };
 		8AEE49AF2AA75A5E00243D2F /* Log.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8AEE49AE2AA75A5E00243D2F /* Log.swift */; };
+		1E4F09CC12E34F0EA4D497A6 /* WidgetSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = F3DAACE20732423884F9201E /* WidgetSnapshot.swift */; };
+		347D539333F04923AA79812A /* FocusStatusWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 77FB84AD0C2B406C83810D2A /* FocusStatusWidget.swift */; };
+		E817BDDE603449A9A0B54B49 /* WidgetSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = F3DAACE20732423884F9201E /* WidgetSnapshot.swift */; };
+		C2B7223DF9CE4CAEA9E3BAFC /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = 8AA54347293094AB002A47FC /* Localizable.strings */; };
+		EA4BBF0BE7E14311841B80C2 /* TomatoBarWidgetExtension.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = BFE6AF17AAAF44A4A5FFFC17 /* TomatoBarWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		D2DD7A9A9A82409582B8B04A /* ActiveTimer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 46E2FA0EBF544F9C8B08BF37 /* ActiveTimer.swift */; };
 		F7137F6A65FB499EACFC7019 /* FocusHistory.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA9B3EB845ED45FC8A79DC99 /* FocusHistory.swift */; };
 /* End PBXBuildFile section */
 
+/* Begin PBXContainerItemProxy section */
+		9DA09C71B1804BEE87DFB779 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 8A21B78027EE31A20009E5DB /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = B3772AA08E1C4C559923C2AC;
+			remoteInfo = TomatoBarWidgetExtension;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		35FEBDC0CC2A45B39EB2AE6C /* Embed App Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				EA4BBF0BE7E14311841B80C2 /* TomatoBarWidgetExtension.appex in Embed App Extensions */,
+			);
+			name = "Embed App Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
 /* Begin PBXFileReference section */
 		46E2FA0EBF544F9C8B08BF37 /* ActiveTimer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActiveTimer.swift; sourceTree = "<group>"; };
 		4CC11A472B6A28500012E8EC /* ko */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = ko; path = ko.lproj/Localizable.strings; sourceTree = "<group>"; };
+		77FB84AD0C2B406C83810D2A /* FocusStatusWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FocusStatusWidget.swift; sourceTree = "<group>"; };
 		8A21B78827EE31A20009E5DB /* TomatoBar.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = TomatoBar.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		8A21B78B27EE31A20009E5DB /* App.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = App.swift; sourceTree = "<group>"; };
 		8A21B78D27EE31A20009E5DB /* View.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = View.swift; sourceTree = "<group>"; };
@@ -37,8 +67,12 @@
 		8AA54346293094AB002A47FC /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/Localizable.strings; sourceTree = "<group>"; };
 		8AA5B3F12812A74600BE1A6C /* Notifications.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Notifications.swift; sourceTree = "<group>"; };
 		8AEE49AE2AA75A5E00243D2F /* Log.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Log.swift; sourceTree = "<group>"; };
+		BFE6AF17AAAF44A4A5FFFC17 /* TomatoBarWidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = TomatoBarWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		C4C8DE0E2930DBB4003B1110 /* zh-Hans */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "zh-Hans"; path = "zh-Hans.lproj/Localizable.strings"; sourceTree = "<group>"; };
 		DA9B3EB845ED45FC8A79DC99 /* FocusHistory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FocusHistory.swift; sourceTree = "<group>"; };
+		E374D861D6EA4B918789B4B4 /* TomatoBarWidget.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = TomatoBarWidget.entitlements; sourceTree = "<group>"; };
+		F3DAACE20732423884F9201E /* WidgetSnapshot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetSnapshot.swift; sourceTree = "<group>"; };
+		F5288531D51842BEAEB92B91 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -52,6 +86,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		B689F2A90349444BB1D32A22 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -59,6 +100,7 @@
 			isa = PBXGroup;
 			children = (
 				8A21B78A27EE31A20009E5DB /* TomatoBar */,
+				C7F1CDA5EA28409E9DCC35D1 /* TomatoBarWidget */,
 				8A21B78927EE31A20009E5DB /* Products */,
 				8A9F700D27EE3AED0012A1EC /* Frameworks */,
 			);
@@ -68,6 +110,7 @@
 			isa = PBXGroup;
 			children = (
 				8A21B78827EE31A20009E5DB /* TomatoBar.app */,
+				BFE6AF17AAAF44A4A5FFFC17 /* TomatoBarWidgetExtension.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -79,6 +122,7 @@
 				8A21B78B27EE31A20009E5DB /* App.swift */,
 				DA9B3EB845ED45FC8A79DC99 /* FocusHistory.swift */,
 				8AEE49AE2AA75A5E00243D2F /* Log.swift */,
+				F3DAACE20732423884F9201E /* WidgetSnapshot.swift */,
 				8A21B78D27EE31A20009E5DB /* View.swift */,
 				8A9F700827EE396E0012A1EC /* State.swift */,
 				8A9F701827EE3DAF0012A1EC /* Timer.swift */,
@@ -89,6 +133,16 @@
 				8AA54347293094AB002A47FC /* Localizable.strings */,
 			);
 			path = TomatoBar;
+			sourceTree = "<group>";
+		};
+		C7F1CDA5EA28409E9DCC35D1 /* TomatoBarWidget */ = {
+			isa = PBXGroup;
+			children = (
+				77FB84AD0C2B406C83810D2A /* FocusStatusWidget.swift */,
+				F5288531D51842BEAEB92B91 /* Info.plist */,
+				E374D861D6EA4B918789B4B4 /* TomatoBarWidget.entitlements */,
+			);
+			path = TomatoBarWidget;
 			sourceTree = "<group>";
 		};
 		8A9F700D27EE3AED0012A1EC /* Frameworks */ = {
@@ -108,11 +162,13 @@
 				8A21B78427EE31A20009E5DB /* Sources */,
 				8A21B78527EE31A20009E5DB /* Frameworks */,
 				8A21B78627EE31A20009E5DB /* Resources */,
+				35FEBDC0CC2A45B39EB2AE6C /* Embed App Extensions */,
 				8A7403A127FA1A4E00E7F90B /* Copy “Launch at Login Helper” */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				D99A038F58AD4B4E8E014208 /* PBXTargetDependency */,
 			);
 			name = TomatoBar;
 			packageProductDependencies = (
@@ -123,6 +179,25 @@
 			productName = TomatoBar;
 			productReference = 8A21B78827EE31A20009E5DB /* TomatoBar.app */;
 			productType = "com.apple.product-type.application";
+		};
+		B3772AA08E1C4C559923C2AC /* TomatoBarWidgetExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = E865AE2A74A94512BE0C5355 /* Build configuration list for PBXNativeTarget "TomatoBarWidgetExtension" */;
+			buildPhases = (
+				E0469B9934D04FCC95AB63C3 /* Sources */,
+				B689F2A90349444BB1D32A22 /* Frameworks */,
+				43294DBB302847089A3FAF23 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = TomatoBarWidgetExtension;
+			packageProductDependencies = (
+			);
+			productName = TomatoBarWidgetExtension;
+			productReference = BFE6AF17AAAF44A4A5FFFC17 /* TomatoBarWidgetExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
 		};
 /* End PBXNativeTarget section */
 
@@ -136,6 +211,9 @@
 				TargetAttributes = {
 					8A21B78727EE31A20009E5DB = {
 						CreatedOnToolsVersion = 13.3;
+					};
+					B3772AA08E1C4C559923C2AC = {
+						CreatedOnToolsVersion = 15.0;
 					};
 				};
 			};
@@ -160,6 +238,7 @@
 			projectRoot = "";
 			targets = (
 				8A21B78727EE31A20009E5DB /* TomatoBar */,
+				B3772AA08E1C4C559923C2AC /* TomatoBarWidgetExtension */,
 			);
 		};
 /* End PBXProject section */
@@ -171,6 +250,14 @@
 			files = (
 				8A21B79027EE31A30009E5DB /* Assets.xcassets in Resources */,
 				8AA5434A2930F008002A47FC /* Localizable.strings in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		43294DBB302847089A3FAF23 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				C2B7223DF9CE4CAEA9E3BAFC /* Localizable.strings in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -210,12 +297,30 @@
 				8A21B78C27EE31A20009E5DB /* App.swift in Sources */,
 				8AA5B3F22812A74600BE1A6C /* Notifications.swift in Sources */,
 				8A9F700927EE396E0012A1EC /* State.swift in Sources */,
+				1E4F09CC12E34F0EA4D497A6 /* WidgetSnapshot.swift in Sources */,
 				D2DD7A9A9A82409582B8B04A /* ActiveTimer.swift in Sources */,
 				F7137F6A65FB499EACFC7019 /* FocusHistory.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		E0469B9934D04FCC95AB63C3 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				347D539333F04923AA79812A /* FocusStatusWidget.swift in Sources */,
+				E817BDDE603449A9A0B54B49 /* WidgetSnapshot.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		D99A038F58AD4B4E8E014208 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = B3772AA08E1C4C559923C2AC /* TomatoBarWidgetExtension */;
+			targetProxy = 9DA09C71B1804BEE87DFB779 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin PBXVariantGroup section */
 		8AA54347293094AB002A47FC /* Localizable.strings */ = {
@@ -355,6 +460,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = TomatoBar/TomatoBar.entitlements;
 				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGNING_ALLOWED = NO;
 				CODE_SIGN_STYLE = Manual;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
@@ -370,7 +476,7 @@
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 11.0;
-				MARKETING_VERSION = 3.1;
+				MARKETING_VERSION = 3.1.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.jsoone24.TomatoBar;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -389,6 +495,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = TomatoBar/TomatoBar.entitlements;
 				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGNING_ALLOWED = NO;
 				CODE_SIGN_STYLE = Manual;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
@@ -404,7 +511,7 @@
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 11.0;
-				MARKETING_VERSION = 3.1;
+				MARKETING_VERSION = 3.1.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.jsoone24.TomatoBar;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -413,6 +520,62 @@
 					"$(inherited)",
 					"$(SYSTEM_LIBRARY_DIR)/PrivateFrameworks",
 				);
+			};
+			name = Release;
+		};
+		46A7915D0BA943D98E2FB641 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				CODE_SIGN_ENTITLEMENTS = TomatoBarWidget/TomatoBarWidget.entitlements;
+				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGNING_ALLOWED = NO;
+				CODE_SIGN_STYLE = Manual;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				DEAD_CODE_STRIPPING = YES;
+				ENABLE_HARDENED_RUNTIME = YES;
+				INFOPLIST_FILE = TomatoBarWidget/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@executable_path/../../../../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 11.0;
+				MARKETING_VERSION = 3.1.1;
+				PRODUCT_BUNDLE_IDENTIFIER = com.jsoone24.TomatoBar.Widget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		F48CB9B986864250BD1423F3 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				CODE_SIGN_ENTITLEMENTS = TomatoBarWidget/TomatoBarWidget.entitlements;
+				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGNING_ALLOWED = NO;
+				CODE_SIGN_STYLE = Manual;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				DEAD_CODE_STRIPPING = YES;
+				ENABLE_HARDENED_RUNTIME = YES;
+				INFOPLIST_FILE = TomatoBarWidget/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@executable_path/../../../../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 11.0;
+				MARKETING_VERSION = 3.1.1;
+				PRODUCT_BUNDLE_IDENTIFIER = com.jsoone24.TomatoBar.Widget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
 			};
 			name = Release;
 		};
@@ -433,6 +596,15 @@
 			buildConfigurations = (
 				8A21B79827EE31A30009E5DB /* Debug */,
 				8A21B79927EE31A30009E5DB /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		E865AE2A74A94512BE0C5355 /* Build configuration list for PBXNativeTarget "TomatoBarWidgetExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				46A7915D0BA943D98E2FB641 /* Debug */,
+				F48CB9B986864250BD1423F3 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
