@@ -265,7 +265,8 @@ class TBTimer: ObservableObject {
          * "Finish" handlers are called when time interval ended
          * "End"    handlers are called when time interval ended or was cancelled
          */
-        stateMachine.addAnyHandler(.any => .work, handler: onWorkStart)
+        // Rest completion must reset long-rest set state before the next work interval is configured.
+        stateMachine.addAnyHandler(.any => .work, order: 1, handler: onWorkStart)
         stateMachine.addAnyHandler(.any => .pausedWork, handler: onPausedWorkStart)
         stateMachine.addAnyHandler(.any => .pausedRest, handler: onPausedRestStart)
         stateMachine.addAnyHandler(.work => .pausedWork, order: 0, handler: onPomodoroPause)
@@ -273,7 +274,7 @@ class TBTimer: ObservableObject {
         stateMachine.addAnyHandler(.work => .rest, order: 0, handler: onWorkFinish)
         stateMachine.addAnyHandler(.work => .any, order: 1, handler: onWorkEnd)
         stateMachine.addAnyHandler(.any => .rest, handler: onRestStart)
-        stateMachine.addAnyHandler(.rest => .work, handler: onRestFinish)
+        stateMachine.addAnyHandler(.rest => .work, order: 0, handler: onRestFinish)
         stateMachine.addAnyHandler(.any => .idle, handler: onIdleStart)
         stateMachine.addAnyHandler(.any => .any, handler: { ctx in
             logger.append(event: TBLogEventTransition(fromContext: ctx))
@@ -845,13 +846,17 @@ class TBTimer: ObservableObject {
     }
 
     private func onRestFinish(context ctx: TBStateMachine.Context) {
+        guard snapshot(from: ctx) == nil else {
+            return
+        }
+
         let finishedLongRest = activeRestKind == .long
         activeRestKind = nil
         if finishedLongRest {
             completedWorkSets += 1
             consecutiveWorkIntervals = 0
         }
-        if ctx.event == .skipRest || snapshot(from: ctx) != nil {
+        if ctx.event == .skipRest {
             return
         }
         notificationCenter.send(
